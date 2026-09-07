@@ -1,0 +1,3 @@
+# PostgreSQL connection string used by Drizzle (app) and the seed script.
+# Local default for a fresh Postgres/Docker instance:
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/app_db

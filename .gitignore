@@ -1,0 +1,18 @@
+# dependencies
+/node_modules
+/node_modules/
+
+# Next.js build output
+/.next
+/out
+
+# environment variables
+.env
+.env*.local
+
+# Editor directories and files
+.vscode
+.vscode/
+
+# OS generated files
+.DS_Store
