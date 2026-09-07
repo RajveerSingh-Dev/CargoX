@@ -142,7 +142,8 @@ h1{font-size:clamp(2.1rem,4.6vw,3.5rem);font-weight:800}
 .demo-ctl{margin-left:auto;display:flex;gap:10px;align-items:center}
 .sdot{width:8px;height:8px;border-radius:50%;background:rgba(126,178,255,.25);transition:background .3s}
 .sdot.on{background:var(--or)}
-#replay{background:none;border:1px solid var(--line);color:var(--or2);border-radius:999px;font-size:.68rem;font-weight:700;padding:5px 12px;cursor:pointer}
+#replay,#pauseBtn{background:none;border:1px solid var(--line);color:var(--or2);border-radius:999px;font-size:.68rem;font-weight:700;padding:5px 12px;cursor:pointer}
+.stage.paused,.stage.paused *{animation-play-state:paused!important}
 .stage{position:relative;min-height:430px;padding:26px;display:grid;place-items:center}
 .scene{display:none;width:100%;max-width:860px}
 .stage[data-scene="1"] #sc1{display:block;animation:pageIn .5s}
@@ -422,7 +423,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);background:rgba(4,10,18,
       <div class="demo-bar">
         <span class="dot" style="background:#ff5d5d"></span><span class="dot" style="background:#ffd166"></span><span class="dot" style="background:#2ee6a8"></span>
         <span class="t">CARGOX · CHARTER ASSISTANT — ANIMATED EXPLAINER</span>
-        <div class="demo-ctl"><span class="sdot on" id="sd1"></span><span class="sdot" id="sd2"></span><span class="sdot" id="sd3"></span><button id="replay">↻ REPLAY</button></div>
+        <div class="demo-ctl"><span class="sdot on" id="sd1"></span><span class="sdot" id="sd2"></span><span class="sdot" id="sd3"></span><button id="replay">↻ REPLAY</button><button id="pauseBtn">⏸ PAUSE</button></div>
       </div>
       <div class="stage" id="demoStage" data-scene="1">
         <div class="scene" id="sc1">
@@ -691,7 +692,7 @@ function route(){
 window.addEventListener('hashchange',route);
 
 /* ---------- demo timeline ---------- */
-var demoRun=0, demoArmed=false;
+var demoRun=0, demoArmed=false, demoPaused=false;
 function armDemo(){
   if(demoArmed)return; demoArmed=true;
   var st=$('#demoStage');
@@ -699,9 +700,24 @@ function armDemo(){
   io2.observe(st);
 }
 $('#replay').addEventListener('click',playDemo);
+function setPaused(p){
+  demoPaused=p;
+  var st=$('#demoStage');
+  if(st.getAnimations){
+    if(p){ st.getAnimations({subtree:true}).forEach(function(a){a.pause();}); }
+    else { st.getAnimations({subtree:true}).forEach(function(a){ if(a.playState==='paused')a.play(); }); }
+  }
+  st.classList.toggle('paused',p);
+  $('#pauseBtn').textContent=p?'▶ RESUME':'⏸ PAUSE';
+}
+$('#pauseBtn').addEventListener('click',function(){ setPaused(!demoPaused); });
 function setScene(n){ $('#demoStage').dataset.scene=n; for(var i=1;i<=3;i++){$('#sd'+i).classList.toggle('on',i<=n);} }
 function playDemo(){
   var run=++demoRun, stage=$('#demoStage');
+  demoPaused=false;
+  stage.classList.remove('paused');
+  var pb=$('#pauseBtn'); if(pb)pb.textContent='\u23f8 PAUSE';
+  if(stage.getAnimations)stage.getAnimations({subtree:true}).forEach(function(a){ if(a.playState==='paused')a.play(); });
   ['tf-origin','tf-dest','tf-ton','tf-date'].forEach(function(id){$('#'+id).textContent=''});
   $('#submit').classList.remove('clicked');
   ['n1','n2','n3','n4','n5'].forEach(function(id){$('#'+id).classList.remove('lit')});
@@ -710,11 +726,11 @@ function playDemo(){
   $('#vcard').classList.remove('pop');
   setScene(1);
   function alive(){return run===demoRun}
-  function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+  function wait(ms){return new Promise(function(r){var t=0;var iv=setInterval(function(){ if(!alive()){clearInterval(iv);return r();} if(!demoPaused)t+=90; if(t>=ms){clearInterval(iv);r();} },90);})}
   function type(id,text,speed){
     return new Promise(function(res){
       var el=$('#'+id), i=0;
-      (function tick(){ if(!alive())return res(); i++; el.textContent=text.slice(0,i);
+      (function tick(){ if(!alive())return res(); if(demoPaused){setTimeout(tick,120);return;} i++; el.textContent=text.slice(0,i);
         if(i<text.length)setTimeout(tick,speed); else res(); })();
     });
   }
