@@ -31,13 +31,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <div className="sticky top-0 z-40 flex items-center gap-4 border-b border-line bg-ink-900/90 px-4 py-3 backdrop-blur-md md:hidden">
             <span className="text-[12px] font-bold tracking-[0.18em] text-paper">COROMANDEL</span>
             <nav className="flex flex-1 gap-1 overflow-x-auto">
-              {[
+             {[
                 ["/", "Pulse"],
                 ["/forecast", "Forecast"],
                 ["/timing", "Timing"],
                 ["/optimizer", "Optimizer"],
                 ["/idle", "Idle"],
                 ["/risk", "Risk"],
+                ["/map", "Live Ops"],
+                ["/chat", "Copilot AI"],
               ].map(([href, label]) => (
                 <a key={href} href={href} className="whitespace-nowrap rounded-md px-2.5 py-1.5 text-[11.5px] font-medium text-mist hover:bg-ink-800">
                   {label}
