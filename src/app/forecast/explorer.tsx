@@ -35,6 +35,9 @@ interface ApiPayload {
 
 const HORIZONS = [60, 120, 180, 365];
 const MONTH_L = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+const USD_TO_INR = 84;
+
+const fmtInr = (usd: number) => `₹${Math.round(usd * USD_TO_INR).toLocaleString("en-IN")}`;
 
 export function ForecastExplorer({ initialClass, initialRoute }: { initialClass?: string; initialRoute?: number }) {
   const [classCode, setClassCode] = useState(initialClass ?? "SUPRAMAX");
@@ -153,10 +156,10 @@ export function ForecastExplorer({ initialClass, initialRoute }: { initialClass?
             <ForecastChart history={data.history} forecast={data.points} height={380} />
             <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-line/60 pt-4 sm:grid-cols-3 xl:grid-cols-6">
               {[
-                ["Spot TCE", `$${data.stats.spot.toLocaleString()}`],
-                ["Fwd 30d", `$${data.stats.fwd30.toLocaleString()} (${data.stats.trendPct30 > 0 ? "+" : ""}${data.stats.trendPct30}%)`],
-                ["Fwd 90d", `$${data.stats.fwd90.toLocaleString()} (${data.stats.trendPct90 > 0 ? "+" : ""}${data.stats.trendPct90}%)`],
-                ["Fwd 180d", `$${data.stats.fwd180.toLocaleString()}`],
+                ["Spot TCE", fmtInr(data.stats.spot)],
+                ["Fwd 30d", `${fmtInr(data.stats.fwd30)} (${data.stats.trendPct30 > 0 ? "+" : ""}${data.stats.trendPct30}%)`],
+                ["Fwd 90d", `${fmtInr(data.stats.fwd90)} (${data.stats.trendPct90 > 0 ? "+" : ""}${data.stats.trendPct90}%)`],
+                ["Fwd 180d", fmtInr(data.stats.fwd180)],
                 ["Holdout MAPE", `${data.stats.holdoutMape}%`],
                 ["Vol 20d ann.", `${data.stats.vol20}% · P${data.stats.volPercentile}`],
               ].map(([l, v]) => (
@@ -205,7 +208,7 @@ export function ForecastExplorer({ initialClass, initialRoute }: { initialClass?
                       <td className="num px-3.5 py-2.5 text-mist">
                         {fmtDateShort(w.startDate)} → {fmtDateShort(w.endDate)}
                       </td>
-                      <td className="num px-3.5 py-2.5 text-paper">${w.avgRate.toLocaleString()}</td>
+                      <td className="num px-3.5 py-2.5 text-paper">{fmtInr(w.avgRate)}</td>
                       <td className="px-3.5 py-2.5 text-right"><Delta value={w.vsSpotPct} invert /></td>
                     </tr>
                   ))}

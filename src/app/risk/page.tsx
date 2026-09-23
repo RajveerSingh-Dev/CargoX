@@ -32,6 +32,60 @@ const TYPE_META: Record<string, { icon: typeof Flame; tone: "bad" | "warn" | "ne
 
 const BAND_TONE = { LOW: "good", GUARDED: "neutral", ELEVATED: "warn", SEVERE: "bad" } as const;
 
+/**
+ * Segment-aware volatility regime classifier.
+ * Factors in vessel size leverage, market beta, and prompt exposure.
+ */
+function getRegimeInsight(code: string, percentile: number) {
+  // Severe volatility regime (>= 66th percentile)
+  if (percentile >= 66) {
+    return {
+      tone: "text-rose",
+      text: "Unstable regime — widen fixing bands & hedge",
+    };
+  }
+
+  // Active transition regime (40th - 65th percentile)
+  if (percentile >= 40) {
+    return {
+      tone: "text-brand",
+      text: "Transition regime — hedge selectively / tighten laycan",
+    };
+  }
+
+  // Building / Moderate regime (15th - 39th percentile) - Tailored by vessel class
+  if (percentile >= 15) {
+    switch (code) {
+      case "SUPRAMAX":
+        return {
+          tone: "text-sky",
+          text: "Building activity — lock prompt stems, monitor Pacific drift",
+        };
+      case "PANAMAX":
+        return {
+          tone: "text-sky",
+          text: "Creeping volatility — fix prompt or index with floor",
+        };
+      case "CAPE":
+        return {
+          tone: "text-sky",
+          text: "Capesize beta active — maintain demurrage buffer",
+        };
+      default:
+        return {
+          tone: "text-sky",
+          text: "Mild baseline — secure prompt stems with standard terms",
+        };
+    }
+  }
+
+  // Pure dormant regime (< 15th percentile, e.g. Handysize at 0)
+  return {
+    tone: "text-teal",
+    text: "Dormant regime — spot fix with confidence",
+  };
+}
+
 export default async function RiskPage() {
   const [board, routes, ports] = await Promise.all([getMarketBoard(), getRoutes(), getPorts()]);
 
@@ -62,20 +116,24 @@ export default async function RiskPage() {
 
       {/* gauges */}
       <section className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {board.classes.map((c) => (
-          <Card key={c.code} hover className="anim-fade-up flex flex-col items-center py-6">
-            <p className="eyebrow mb-3">{c.name}</p>
-            <Gauge
-              value={c.fc.stats.volPercentile}
-              label="Volatility percentile"
-              caption={`20d ${c.fc.stats.vol20}% · 60d ${c.fc.stats.vol60}% ann.`}
-            />
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-fog">
-              <ShieldAlert className={clsx("h-3.5 w-3.5", c.fc.stats.volPercentile >= 66 ? "text-rose" : c.fc.stats.volPercentile >= 40 ? "text-brand" : "text-teal")} />
-              {c.fc.stats.volPercentile >= 66 ? "Unstable regime — widen fixing bands" : c.fc.stats.volPercentile >= 40 ? "Transition regime — hedge selectively" : "Calm regime — fix with confidence"}
-            </div>
-          </Card>
-        ))}
+        {board.classes.map((c) => {
+          const insight = getRegimeInsight(c.code, c.fc.stats.volPercentile);
+
+          return (
+            <Card key={c.code} hover className="anim-fade-up flex flex-col items-center py-6">
+              <p className="eyebrow mb-3">{c.name}</p>
+              <Gauge
+                value={c.fc.stats.volPercentile}
+                label="Volatility percentile"
+                caption={`20d ${c.fc.stats.vol20}% · 60d ${c.fc.stats.vol60}% ann.`}
+              />
+              <div className="mt-3 flex items-center text-center gap-1.5 text-[11px] text-fog">
+                <ShieldAlert className={clsx("h-3.5 w-3.5 shrink-0", insight.tone)} />
+                <span>{insight.text}</span>
+              </div>
+            </Card>
+          );
+        })}
       </section>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">

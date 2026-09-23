@@ -1,12 +1,32 @@
 import clsx from "clsx";
 import Link from "next/link";
-import { Anchor, ArrowRight, Compass, ListChecks, MoonStar, Sailboat, TrendingUp } from "lucide-react";
+import {
+  AlertTriangle,
+  Anchor,
+  ArrowRight,
+  Compass,
+  LifeBuoy,
+  ListChecks,
+  MoonStar,
+  Sailboat,
+  TrendingUp,
+  Wrench,
+  Zap,
+} from "lucide-react";
 import { Badge, Card, PageHeader, SectionLabel, fmtDate } from "@/components/ui";
 import { buildIdlePlan, getMarketBoard } from "@/lib/insights";
 
 export const dynamic = "force-dynamic";
 
 const OPEX: Record<string, number> = { HANDY: 5600, SUPRAMAX: 6300, PANAMAX: 6900, CAPE: 7900 };
+const USD_TO_INR = 84;
+
+const fmtInrCompact = (usd: number) => {
+  const inr = usd * USD_TO_INR;
+  if (inr >= 10000000) return `₹${(inr / 10000000).toFixed(2)} Cr`;
+  if (inr >= 100000) return `₹${(inr / 100000).toFixed(1)}L`;
+  return `₹${Math.round(inr).toLocaleString("en-IN")}`;
+};
 
 export default async function IdlePage({
   searchParams,
@@ -20,6 +40,7 @@ export default async function IdlePage({
 
   if (!plan) return null;
   const opex = OPEX[selected] ?? 6300;
+  const dailyBurnInr = Math.round(opex * USD_TO_INR);
 
   const daysUntil = (iso: string) =>
     Math.max(0, Math.round((new Date(iso + "T00:00:00Z").getTime() - new Date(board.todayISO + "T00:00:00Z").getTime()) / 86400000));
@@ -83,13 +104,13 @@ export default async function IdlePage({
         <Card className="anim-fade-up flex flex-col">
           <SectionLabel>Cost of doing nothing</SectionLabel>
           <div className="flex flex-1 flex-col justify-center">
-            <p className="num text-[44px] font-bold leading-none text-rose">${opex.toLocaleString()}</p>
+            <p className="num text-[44px] font-bold leading-none text-rose">₹{dailyBurnInr.toLocaleString("en-IN")}</p>
             <p className="mt-2 text-[11.5px] text-fog">daily cash burn of an idle {selected} (opex + finance, zero revenue)</p>
             <div className="mt-5 space-y-2 text-[12px]">
               {[
-                ["10 idle days", `$${(opex * 10 / 1000).toFixed(0)}k lost`],
-                ["30 idle days", `$${(opex * 30 / 1000).toFixed(0)}k lost`],
-                ["Ballast 6 days + prompt cargo", `≈ -$${Math.max(6, Math.round(opex * 6 / 1000 - 9))}k net better than waiting`],
+                ["10 idle days", `${fmtInrCompact(opex * 10)} lost`],
+                ["30 idle days", `${fmtInrCompact(opex * 30)} lost`],
+                ["Ballast 6 days + prompt cargo", `≈ -${fmtInrCompact(Math.max(6, Math.round((opex * 6) / 1000 - 9)) * 1000)} net better than waiting`],
               ].map(([l, v]) => (
                 <div key={l} className="flex items-center justify-between border-b border-line/50 pb-2 last:border-0">
                   <span className="text-fog">{l}</span>
@@ -130,7 +151,7 @@ export default async function IdlePage({
                     <span className="text-mist">{r.dest}</span>
                   </td>
                   <td className="px-4 py-3.5 text-fog">{r.commodity}</td>
-                  <td className="num px-4 py-3.5 font-semibold text-paper">${r.fwd30.toLocaleString()}</td>
+                  <td className="num px-4 py-3.5 font-semibold text-paper">₹{Math.round(r.fwd30 * USD_TO_INR).toLocaleString("en-IN")}</td>
                   <td className={clsx("num px-4 py-3.5", r.trendPct30 >= 0 ? "text-teal" : "text-rose")}>
                     {r.trendPct30 >= 0 ? "+" : ""}{r.trendPct30}%
                   </td>
@@ -147,6 +168,61 @@ export default async function IdlePage({
           </table>
         </div>
         <p className="mt-4 text-[11px] text-fog">Score blends forward earnings, momentum and ballast distance from a typical East Coast India discharge. Corridors the selected class physically cannot trade (draft/gear) are excluded automatically.</p>
+      </Card>
+
+      {/* active idle contingency recovery */}
+      <Card className="anim-fade-up border-rose/30 bg-rose/[0.02]">
+        <SectionLabel right={<Badge tone="bad">Contingency Execution</Badge>}>
+          <span className="inline-flex items-center gap-2">
+            <LifeBuoy className="h-3.5 w-3.5 text-rose" />
+            What if a ship becomes idle? · 4-stage recovery protocol
+          </span>
+        </SectionLabel>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-line bg-ink-800/60 p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="num text-[11px] font-bold text-fog">Day 01 – 03</span>
+              <Zap className="h-3.5 w-3.5 text-brand" />
+            </div>
+            <p className="mt-1.5 text-[12.5px] font-semibold text-paper">Coastal Cabotage Run</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-fog">
+              Bid immediately on domestic thermal coal parcels (e.g. Paradip/Dhamra to Ennore/Tuticorin) under Indian cabotage to cover daily bunker cash burn.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-line bg-ink-800/60 p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="num text-[11px] font-bold text-fog">Day 04 – 07</span>
+              <Compass className="h-3.5 w-3.5 text-sky" />
+            </div>
+            <p className="mt-1.5 text-[12.5px] font-semibold text-paper">Immediate Ballast Release</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-fog">
+              Steer empty toward high-absorption hubs (Mina Saqr limestone or Muara Berau coal). Proves ~₹24.4L net better than waiting at East Coast anchorages.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-line bg-ink-800/60 p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="num text-[11px] font-bold text-fog">Day 08 – 14</span>
+              <Wrench className="h-3.5 w-3.5 text-teal" />
+            </div>
+            <p className="mt-1.5 text-[12.5px] font-semibold text-paper">Advance Drydock / Survey</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-fog">
+              Pull forward scheduled class surveys, underwater hull cleaning, or crew rotations so off-hire days coincide with zero-earning market windows.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-line bg-ink-800/60 p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="num text-[11px] font-bold text-fog">Day 15+</span>
+              <AlertTriangle className="h-3.5 w-3.5 text-rose" />
+            </div>
+            <p className="mt-1.5 text-[12.5px] font-semibold text-paper">Warm Lay-up Transition</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-fog">
+              If forward fixtures fail, switch to warm lay-up status at designated roadsteads. Reduces generator fuel and manning costs, slashing cash burn by ~45%.
+            </p>
+          </div>
+        </div>
       </Card>
 
       {/* action checklist */}

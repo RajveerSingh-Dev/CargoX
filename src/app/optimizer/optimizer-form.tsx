@@ -47,13 +47,37 @@ interface Payload {
 const CARGO_PRESETS = [27000, 33000, 50000, 55000, 75000, 170000];
 const COMMODITIES = ["Thermal Coal", "Coking Coal", "Iron Ore", "Limestone", "Cement Clinker", "Bauxite", "Fertilizer (Urea)", "Steel Products"];
 
+const USD_TO_INR = 84;
+
 export function OptimizerForm() {
+  const [currency, setCurrency] = useState<"INR" | "USD">("INR");
   const [origin, setOrigin] = useState("IDTAB");
   const [dest, setDest] = useState("INKRI");
   const [cargo, setCargo] = useState(55000);
   const [commodity, setCommodity] = useState("Thermal Coal");
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Currency Formatters
+  const fmtRate = (usd: number) =>
+    currency === "INR"
+      ? `₹${Math.round(usd * USD_TO_INR).toLocaleString("en-IN")}`
+      : `$${usd.toFixed(2)}`;
+
+  const fmtDaily = (usd: number) =>
+    currency === "INR"
+      ? `₹${Math.round(usd * USD_TO_INR).toLocaleString("en-IN")}`
+      : `$${usd.toLocaleString()}`;
+
+  const fmtTotal = (usd: number) =>
+    currency === "INR"
+      ? `₹${((usd * USD_TO_INR) / 1e7).toFixed(2)} Cr`
+      : `$${(usd / 1e6).toFixed(2)}M`;
+
+  const fmtSubK = (usd: number) =>
+    currency === "INR"
+      ? `₹${((usd * USD_TO_INR) / 1e5).toFixed(0)}L`
+      : `$${(usd / 1000).toFixed(0)}k`;
 
   useEffect(() => {
     let cancelled = false;
@@ -151,6 +175,30 @@ export function OptimizerForm() {
             >
               {COMMODITIES.map((c) => <option key={c}>{c}</option>)}
             </select>
+            {/* Currency Switch */}
+            <div className="mt-2 flex items-center gap-1.5">
+              <span className="eyebrow !text-[9px] text-fog">Currency:</span>
+              <button
+                type="button"
+                onClick={() => setCurrency("USD")}
+                className={clsx(
+                  "num rounded-md border px-2 py-1 text-[10px] font-semibold transition-colors",
+                  currency === "USD" ? "border-brand/50 bg-brand/15 text-brand-soft" : "border-line text-fog hover:text-mist"
+                )}
+              >
+                USD ($)
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrency("INR")}
+                className={clsx(
+                  "num rounded-md border px-2 py-1 text-[10px] font-semibold transition-colors",
+                  currency === "INR" ? "border-brand/50 bg-brand/15 text-brand-soft" : "border-line text-fog hover:text-mist"
+                )}
+              >
+                INR (₹)
+              </button>
+            </div>
           </div>
         </div>
       </Card>
@@ -171,10 +219,10 @@ export function OptimizerForm() {
             </div>
             <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { icon: CircleDollarSign, l: "All-in freight", v: `$${best.plan.costPerTonUsd.toFixed(2)}/t` },
+                { icon: CircleDollarSign, l: "All-in freight", v: `${fmtRate(best.plan.costPerTonUsd)}/t` },
                 { icon: Clock3, l: "Round voyage", v: `${best.plan.totalDays} days` },
                 { icon: GaugeCircle, l: "Capacity used", v: `${best.utilizationPct}%` },
-                { icon: Fuel, l: "Hire reference", v: `$${best.plan.dailyHireUsd.toLocaleString()}/d` },
+                { icon: Fuel, l: "Hire reference", v: `${fmtDaily(best.plan.dailyHireUsd)}/d` },
               ].map((s) => (
                 <div key={s.l} className="rounded-xl border border-line bg-ink-800/60 px-3.5 py-3">
                   <p className="flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.14em] text-fog"><s.icon className="h-3 w-3 text-brand-soft" /> {s.l}</p>
@@ -258,11 +306,11 @@ export function OptimizerForm() {
                 <>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <p className="num text-[26px] font-bold leading-none text-paper">${cand.plan.costPerTonUsd.toFixed(2)}</p>
+                      <p className="num text-[26px] font-bold leading-none text-paper">{fmtRate(cand.plan.costPerTonUsd)}</p>
                       <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-fog">per tonne all-in</p>
                     </div>
                     <div className="text-right">
-                      <p className="num text-[13px] font-semibold text-mist">${(cand.plan.totalCostUsd / 1e6).toFixed(2)}M</p>
+                      <p className="num text-[13px] font-semibold text-mist">{fmtTotal(cand.plan.totalCostUsd)}</p>
                       <p className="text-[10px] text-fog">voyage total</p>
                     </div>
                   </div>
@@ -358,10 +406,22 @@ export function OptimizerForm() {
             ))}
           </div>
           <div className="mt-3.5 grid grid-cols-2 gap-x-8 gap-y-1.5 text-[11.5px] sm:grid-cols-4">
-            <div className="flex justify-between border-b border-line/50 pb-1.5"><span className="text-fog">Hire ({best.plan.totalDays}d @ ${best.plan.dailyHireUsd.toLocaleString()})</span><span className="num text-paper">${(best.plan.hireCostUsd / 1000).toFixed(0)}k</span></div>
-            <div className="flex justify-between border-b border-line/50 pb-1.5"><span className="text-fog">Bunkers ({(best.plan.bunkerSeaT + best.plan.bunkerPortT).toLocaleString()}t)</span><span className="num text-paper">${(best.plan.bunkerCostUsd / 1000).toFixed(0)}k</span></div>
-            <div className="flex justify-between border-b border-line/50 pb-1.5"><span className="text-fog">Port fees both ends</span><span className="num text-paper">${(best.plan.portFeesUsd / 1000).toFixed(0)}k</span></div>
-            <div className="flex justify-between border-b border-line/50 pb-1.5"><span className="text-fog font-semibold">Total voyage cost</span><span className="num font-bold text-brand-soft">${(best.plan.totalCostUsd / 1e6).toFixed(2)}M</span></div>
+            <div className="flex justify-between border-b border-line/50 pb-1.5">
+              <span className="text-fog">Hire ({best.plan.totalDays}d @ {fmtDaily(best.plan.dailyHireUsd)})</span>
+              <span className="num text-paper">{fmtSubK(best.plan.hireCostUsd)}</span>
+            </div>
+            <div className="flex justify-between border-b border-line/50 pb-1.5">
+              <span className="text-fog">Bunkers ({(best.plan.bunkerSeaT + best.plan.bunkerPortT).toLocaleString()}t)</span>
+              <span className="num text-paper">{fmtSubK(best.plan.bunkerCostUsd)}</span>
+            </div>
+            <div className="flex justify-between border-b border-line/50 pb-1.5">
+              <span className="text-fog">Port fees both ends</span>
+              <span className="num text-paper">{fmtSubK(best.plan.portFeesUsd)}</span>
+            </div>
+            <div className="flex justify-between border-b border-line/50 pb-1.5">
+              <span className="text-fog font-semibold">Total voyage cost</span>
+              <span className="num font-bold text-brand-soft">{fmtTotal(best.plan.totalCostUsd)}</span>
+            </div>
           </div>
         </Card>
       )}

@@ -120,8 +120,24 @@ export function ForecastChart({
           </defs>
           <CartesianGrid stroke="rgba(126,152,206,0.07)" vertical={false} />
           <XAxis dataKey="date" tickFormatter={fmtShort} tickLine={false} axisLine={false} minTickGap={48} dy={6} />
-          <YAxis tickFormatter={usdK} tickLine={false} axisLine={false} width={64} domain={["auto", "auto"]} />
-          <Tooltip content={<ForecastTip />} cursor={{ stroke: "rgba(126,152,206,0.3)" }} />
+          <YAxis
+                tickFormatter={(val) => {
+                  const inrVal = Math.round((val * 84) / 1000); // Renders in thousands (₹k) or Lakhs (₹L)
+                  return `₹${inrVal}k`;
+                }}
+                stroke="#5d6c8a"
+                fontSize={10}
+              /><Tooltip formatter={(value: number) => [
+                  `₹${Math.round(value * 84).toLocaleString("en-IN")}`,
+                  "TCE Rate",
+                ]}
+                contentStyle={{
+                  backgroundColor: "#0d1524",
+                  borderColor: "rgba(126, 152, 206, 0.24)",
+                  borderRadius: "8px",
+                  color: "#e8edf8",
+                }}
+              />
           {showBands && (
             <>
               <Area type="monotone" dataKey="oLo" stackId="outer" stroke="none" fill="transparent" isAnimationActive={false} legendType="none" tooltipType="none" />

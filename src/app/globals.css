@@ -27,32 +27,88 @@ html {
   color-scheme: dark;
 }
 
+/* ------------------------------------------------------------ LIGHT MODE OVERRIDES */
+html.light {
+  color-scheme: light;
+  --color-ink-950: #f8fafc;
+  --color-ink-900: #ffffff;
+  --color-ink-850: #ffffff;
+  --color-ink-800: #f1f5f9;
+  --color-ink-700: #e2e8f0;
+  --color-ink-600: #cbd5e1;
+  --color-line: rgba(15, 23, 42, 0.08);
+  --color-line-strong: rgba(15, 23, 42, 0.16);
+  --color-mist: #475569;
+  --color-fog: #64748b;
+  --color-paper: #0f172a;
+}
+
 body {
   background-color: var(--color-ink-950);
   color: var(--color-paper);
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-::selection {
-  background: rgba(242, 166, 59, 0.28);
-  color: #fff;
+/* Light mode background overlays */
+html.light .aurora {
+  background:
+    radial-gradient(58% 42% at 18% 0%, rgba(242, 166, 59, 0.08), transparent 70%),
+    radial-gradient(52% 40% at 82% 6%, rgba(43, 217, 199, 0.06), transparent 70%),
+    radial-gradient(40% 34% at 55% -6%, rgba(94, 176, 251, 0.06), transparent 70%);
 }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #22304e transparent;
-}
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-thumb {
-  background: #22304e;
-  border-radius: 8px;
+html.light .grid-bg {
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
 }
 
-/* ------------------------------------------------------------ surfaces */
+/* Light mode panels & cards */
+html.light .panel,
+html.light .glass-card {
+  background: #ffffff;
+  border-color: var(--color-line);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+html.light .glass-sidebar {
+  background: rgba(255, 255, 255, 0.85);
+  border-right-color: var(--color-line);
+}
+
+html.light .glass-ticker {
+  background: rgba(248, 250, 252, 0.85);
+  border-bottom-color: var(--color-line);
+}
+
+html.light .data-table th {
+  color: var(--color-fog);
+  border-bottom-color: var(--color-line);
+}
+
+html.light .data-table td {
+  border-bottom-color: var(--color-line);
+  color: var(--color-paper);
+}
+
+html.light .data-table tr:hover td {
+  background: rgba(15, 23, 42, 0.02);
+}
+
+html.light .segment-pill {
+  border-color: var(--color-line-strong);
+  color: var(--color-mist);
+}
+
+html.light .segment-pill.active {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+  background: rgba(242, 166, 59, 0.12);
+}
+
+/* Keep existing utilities */
 .panel {
   background:
     linear-gradient(180deg, rgba(126, 152, 206, 0.05), rgba(126, 152, 206, 0.012)),
@@ -70,7 +126,6 @@ body {
 .inset-glow {
   box-shadow: inset 0 1px 0 rgba(232, 237, 248, 0.05);
 }
-
 .grid-bg {
   background-image:
     linear-gradient(rgba(126, 152, 206, 0.055) 1px, transparent 1px),
@@ -78,15 +133,12 @@ body {
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 30%, transparent 100%);
 }
-
 .aurora {
   background:
     radial-gradient(58% 42% at 18% 0%, rgba(242, 166, 59, 0.09), transparent 70%),
     radial-gradient(52% 40% at 82% 6%, rgba(43, 217, 199, 0.07), transparent 70%),
     radial-gradient(40% 34% at 55% -6%, rgba(94, 176, 251, 0.07), transparent 70%);
 }
-
-/* ------------------------------------------------------------ typography */
 .num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -103,66 +155,4 @@ body {
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 400;
-}
-
-/* ------------------------------------------------------------ motion */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes ticker {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(43, 217, 199, 0.5); }
-  50% { opacity: 0.6; box-shadow: 0 0 0 6px rgba(43, 217, 199, 0); }
-}
-@keyframes shimmer {
-  from { background-position: -200% 0; }
-  to { background-position: 200% 0; }
-}
-.anim-fade-up {
-  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.ticker-track {
-  animation: ticker 55s linear infinite;
-}
-.ticker-track:hover {
-  animation-play-state: paused;
-}
-.live-dot {
-  animation: pulseDot 2.2s ease-in-out infinite;
-}
-
-.stagger > *:nth-child(1) { animation-delay: 0.02s; }
-.stagger > *:nth-child(2) { animation-delay: 0.08s; }
-.stagger > *:nth-child(3) { animation-delay: 0.14s; }
-.stagger > *:nth-child(4) { animation-delay: 0.2s; }
-.stagger > *:nth-child(5) { animation-delay: 0.26s; }
-.stagger > *:nth-child(6) { animation-delay: 0.32s; }
-
-/* ------------------------------------------------------------ charts */
-.recharts-cartesian-axis-tick text {
-  fill: #5d6c8a;
-  font-family: var(--font-mono);
-  font-size: 10px;
-}
-.recharts-tooltip-cursor {
-  stroke: rgba(126, 152, 206, 0.25);
-}
-/* hide recharts default focus outline */
-.recharts-wrapper:focus,
-.recharts-surface:focus {
-  outline: none;
-}
-
-/* heat cells */
-.heat-cell {
-  transition: transform 0.15s ease, filter 0.15s ease;
-}
-.heat-cell:hover {
-  transform: scale(1.06);
-  filter: brightness(1.35);
-  z-index: 2;
 }

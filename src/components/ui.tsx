@@ -3,8 +3,22 @@ import clsx from "clsx";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 
 // --------------------------------------------------------------- format
-export const fmtUsd = (n: number, digits = 0) =>
-  "$" + n.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits });
+// src/components/ui.tsx
+
+const USD_TO_INR = 84;
+
+export function fmtUsd(val: number): string {
+  if (val === null || val === undefined || isNaN(val)) return "₹0";
+  
+  const inrValue = Math.round(val * USD_TO_INR);
+  return `₹${inrValue.toLocaleString("en-IN")}`;
+}
+
+// Optional helper for large portfolio/fleet sums (Crores/Lakhs)
+export function fmtInrCrores(valInUsdMillions: number): string {
+  const inrCr = valInUsdMillions * (USD_TO_INR / 10);
+  return `₹${inrCr.toFixed(2)} Cr`;
+}
 export const fmtPct = (n: number, signed = true) =>
   `${signed && n > 0 ? "+" : ""}${n.toFixed(1)}%`;
 export const fmtDate = (iso: string) =>

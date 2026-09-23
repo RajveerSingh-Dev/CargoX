@@ -11,7 +11,7 @@ const jbMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jbmono" })
 const instr = Instrument_Serif({ weight: "400", subsets: ["latin"], variable: "--font-instr" });
 
 export const metadata: Metadata = {
-  title: "Coromandel — Freight Intelligence",
+  title: "CargoX — Freight Intelligence",
   description:
     "Predictive dry-bulk chartering platform for India's East Coast: freight rate forecasting, vessel-port optimization, market entry timing, idle management and risk radar.",
 };
