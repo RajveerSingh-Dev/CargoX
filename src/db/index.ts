@@ -1,22 +1,24 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
-import * as schema from "./schema";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL;
 
-// Prevent build-time crashes during static page collection
-const sql = neon(databaseUrl || "postgresql://dummy:dummy@localhost:5432/dummy");
+// Prevent build-time crashes during Next.js static page collection.
+// If the environment variable is missing (e.g., during build), it falls back to a dummy URL.
+const connectionString = databaseUrl || "postgresql://dummy:dummy@localhost:5432/dummy";
 
-const globalForDb = globalThis as unknown as {
-  db: ReturnType<typeof drizzle> | undefined;
+const globalForDb = globalThis as typeof globalThis & {
+  __arenaNextJsPostgresqlPool?: Pool;
 };
 
-export const db =
-  globalForDb.db ??
-  drizzle(sql, {
-    schema,
+export const pool =
+  globalForDb.__arenaNextJsPostgresqlPool ??
+  new Pool({
+    connectionString,
   });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForDb.db = db;
+  globalForDb.__arenaNextJsPostgresqlPool = pool;
 }
+
+export const db = drizzle(pool);

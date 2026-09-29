@@ -24,8 +24,13 @@ export const getPorts = cache(async (): Promise<Port[]> => {
 });
 
 export const getClasses = cache(async (): Promise<VesselClass[]> => {
-  const rows = await db.select().from(vesselClasses).orderBy(asc(vesselClasses.typicalDwt));
-  return rows;
+  try {
+    const rows = await db.select().from(vesselClasses).orderBy(asc(vesselClasses.typicalDwt));
+    return rows;
+  } catch (error) {
+    console.warn("Database connection failed during build/fetch. Returning empty array.");
+    return [];
+  }
 });
 
 export const getRoutes = cache(async (): Promise<RouteWithPorts[]> => {
