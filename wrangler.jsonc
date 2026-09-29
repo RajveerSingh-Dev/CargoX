@@ -3,7 +3,6 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2024-09-23",
   "compatibility_flags": ["nodejs_compat"],
-  // Add this specific block to serve your CSS/JS chunks
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
