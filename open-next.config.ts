@@ -12,7 +12,8 @@ export default {
       queue: "dummy",
     },
   },
-  edgeExternals: ["node:crypto"],
+  // We added "pg-cloudflare" here so the esbuild bundler completely ignores it
+  edgeExternals: ["node:crypto", "pg-cloudflare"],
   middleware: {
     external: true,
     override: {
