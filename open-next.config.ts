@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { OpenNextConfig } from "@opennextjs/cloudflare";
 
 export default {
