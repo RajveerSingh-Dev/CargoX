@@ -13,6 +13,7 @@
     "@deck.gl/layers": "^9.4.0",
     "@deck.gl/mesh-layers": "^9.4.0",
     "@deck.gl/react": "^9.4.0",
+    "@neondatabase/serverless": "^1.1.0",
     "clsx": "^2.1.1",
     "deck.gl": "^9.4.0",
     "dotenv": "17.3.1",
