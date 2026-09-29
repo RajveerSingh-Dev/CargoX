@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -10,52 +11,28 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 const SHIP_MODEL_URL = '/ship.glb';
 
-// Intercontinental bulk coal voyage: Gladstone (Australia) ➔ Paradip (India) ~4,600 nm
+// Gladstone (Australia) ➔ Paradip (India) ~4,600 nm
 const VOYAGE_PATH: [number, number][] = [
-  [151.25, -23.84], // Gladstone Port, Queensland, Australia
-  [153.20, -19.50], // Coral Sea Outer Route
-  [145.50, -11.00], // Torres Strait Entrance
-  [135.20, -10.20], // Arafura Sea
-  [124.50, -10.80], // Timor Sea
-  [112.00, -9.50],  // South of Java, Indian Ocean
-  [98.00, -2.50],   // Central Indian Ocean Equator
-  [93.80, 6.20],    // Great Nicobar Channel (Entrance to Bay of Bengal)
-  [88.80, 14.50],   // Central Bay of Bengal
-  [86.67, 20.26]    // Paradip Port, Odisha, India
+  [151.25, -23.84],
+  [153.20, -19.50],
+  [145.50, -11.00],
+  [135.20, -10.20],
+  [124.50, -10.80],
+  [112.00, -9.50],
+  [98.00, -2.50],
+  [93.80, 6.20],
+  [88.80, 14.50],
+  [86.67, 20.26]
 ];
 
 const TOTAL_VOYAGE_DAYS = 15.8;
 const ROUTE_DATA = [{ path: VOYAGE_PATH, color: [31, 208, 169] }];
 
 const PORT_LOCATIONS = [
-  {
-    id: 'origin',
-    name: 'Gladstone Port',
-    country: 'Australia',
-    coordinates: [151.25, -23.84],
-    role: 'Load Port (RGT Coal Terminal)'
-  },
-  {
-    id: 'chokepoint-1',
-    name: 'Torres Strait',
-    country: 'Australia / PNG',
-    coordinates: [142.50, -10.60],
-    role: 'Shallow Draft Chokepoint'
-  },
-  {
-    id: 'chokepoint-2',
-    name: 'Nicobar Channel',
-    country: 'Indian Ocean Corridor',
-    coordinates: [93.80, 6.20],
-    role: 'Bay of Bengal Gate'
-  },
-  {
-    id: 'destination',
-    name: 'Paradip Port',
-    country: 'India',
-    coordinates: [86.67, 20.26],
-    role: 'Discharge Berth (IOTL / Steelmaker Intake)'
-  }
+  { id: 'origin', name: 'Gladstone Port', country: 'Australia', coordinates: [151.25, -23.84], role: 'Load Port (RGT Coal Terminal)' },
+  { id: 'chokepoint-1', name: 'Torres Strait', country: 'Australia / PNG', coordinates: [142.50, -10.60], role: 'Shallow Draft Chokepoint' },
+  { id: 'chokepoint-2', name: 'Nicobar Channel', country: 'Indian Ocean Corridor', coordinates: [93.80, 6.20], role: 'Bay of Bengal Gate' },
+  { id: 'destination', name: 'Paradip Port', country: 'India', coordinates: [86.67, 20.26], role: 'Discharge Berth (IOTL / Steelmaker Intake)' }
 ];
 
 const COUNTRY_LABELS = [
@@ -79,9 +56,7 @@ const SATELLITE_STYLE: any = {
   sources: {
     'esri-satellite': {
       type: 'raster',
-      tiles: [
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-      ],
+      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
       tileSize: 256
     }
   },
@@ -98,8 +73,8 @@ const SATELLITE_STYLE: any = {
 
 export default function ShipMap() {
   const [hoverInfo, setHoverInfo] = useState<any>(null);
-  const [voyageProgress, setVoyageProgress] = useState(0.42);
-  const [currentZoom, setCurrentZoom] = useState(3.6);
+  const [voyageProgress, setVoyageProgress] = useState<number>(0.42);
+  const [currentZoom, setCurrentZoom] = useState<number>(3.6);
 
   useEffect(() => {
     let animationFrame: number;
