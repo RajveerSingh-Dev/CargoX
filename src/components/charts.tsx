@@ -127,7 +127,7 @@ export function ForecastChart({
                 }}
                 stroke="#5d6c8a"
                 fontSize={10}
-              /><Tooltip formatter={(value: number) => [
+              /><Tooltip formatter={(value: any) => [
                   `₹${Math.round(value * 84).toLocaleString("en-IN")}`,
                   "TCE Rate",
                 ]}
