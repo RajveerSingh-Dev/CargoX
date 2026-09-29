@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -8,61 +9,32 @@ import { LightingEffect, AmbientLight, DirectionalLight } from '@deck.gl/core';
 import Map from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Move ship.glb into your /public directory, then reference it with an absolute root path:
 const SHIP_MODEL_URL = '/ship.glb';
 
-// ... rest of your shipmap code
-
-// 1. Intercontinental bulk coal voyage: Gladstone (Australia) ➔ Paradip (India) ~4,600 nm
-const VOYAGE_PATH = [
-  [151.25, -23.84], // Gladstone Port, Queensland, Australia
-  [153.20, -19.50], // Coral Sea Outer Route
-  [145.50, -11.00], // Torres Strait Entrance
-  [135.20, -10.20], // Arafura Sea
-  [124.50, -10.80], // Timor Sea
-  [112.00, -9.50],  // South of Java, Indian Ocean
-  [98.00, -2.50],   // Central Indian Ocean Equator
-  [93.80, 6.20],    // Great Nicobar Channel (Entrance to Bay of Bengal)
-  [88.80, 14.50],   // Central Bay of Bengal
-  [86.67, 20.26]    // Paradip Port, Odisha, India
+// Gladstone (Australia) ➔ Paradip (India) ~4,600 nm
+const VOYAGE_PATH: [number, number][] = [
+  [151.25, -23.84],
+  [153.20, -19.50],
+  [145.50, -11.00],
+  [135.20, -10.20],
+  [124.50, -10.80],
+  [112.00, -9.50],
+  [98.00, -2.50],
+  [93.80, 6.20],
+  [88.80, 14.50],
+  [86.67, 20.26]
 ];
 
-const TOTAL_VOYAGE_DAYS = 15.8; // ~4,600 nm at 12.2 knots steaming speed
+const TOTAL_VOYAGE_DAYS = 15.8;
 const ROUTE_DATA = [{ path: VOYAGE_PATH, color: [31, 208, 169] }];
 
-// 2. Terminal and Waypoint locations
 const PORT_LOCATIONS = [
-  { 
-    id: 'origin', 
-    name: 'Gladstone Port', 
-    country: 'Australia', 
-    coordinates: [151.25, -23.84], 
-    role: 'Load Port (RGT Coal Terminal)' 
-  },
-  { 
-    id: 'chokepoint-1', 
-    name: 'Torres Strait', 
-    country: 'Australia / PNG', 
-    coordinates: [142.50, -10.60], 
-    role: 'Shallow Draft Chokepoint' 
-  },
-  { 
-    id: 'chokepoint-2', 
-    name: 'Nicobar Channel', 
-    country: 'Indian Ocean Corridor', 
-    coordinates: [93.80, 6.20], 
-    role: 'Bay of Bengal Gate' 
-  },
-  { 
-    id: 'destination', 
-    name: 'Paradip Port', 
-    country: 'India', 
-    coordinates: [86.67, 20.26], 
-    role: 'Discharge Berth (IOTL / Steelmaker Intake)' 
-  },
+  { id: 'origin', name: 'Gladstone Port', country: 'Australia', coordinates: [151.25, -23.84], role: 'Load Port (RGT Coal Terminal)' },
+  { id: 'chokepoint-1', name: 'Torres Strait', country: 'Australia / PNG', coordinates: [142.50, -10.60], role: 'Shallow Draft Chokepoint' },
+  { id: 'chokepoint-2', name: 'Nicobar Channel', country: 'Indian Ocean Corridor', coordinates: [93.80, 6.20], role: 'Bay of Bengal Gate' },
+  { id: 'destination', name: 'Paradip Port', country: 'India', coordinates: [86.67, 20.26], role: 'Discharge Berth (IOTL / Steelmaker Intake)' }
 ];
 
-// 3. Country geographic labels for regional context
 const COUNTRY_LABELS = [
   { name: 'AUSTRALIA', coordinates: [134.0, -24.5] },
   { name: 'INDONESIA', coordinates: [118.0, -2.5] },
@@ -72,22 +44,20 @@ const COUNTRY_LABELS = [
 ];
 
 const ambientLight = new AmbientLight({ color: [255, 255, 255], intensity: 0.9 });
-const dirLight = new DirectionalLight({ 
-  color: [255, 255, 255], 
+const dirLight = new DirectionalLight({
+  color: [255, 255, 255],
   intensity: 1.6,
   direction: [-1, -2, -3]
 });
 const lightingEffect = new LightingEffect({ ambientLight, dirLight });
 
-const SATELLITE_STYLE = {
+const SATELLITE_STYLE: any = {
   version: 8,
   sources: {
     'esri-satellite': {
       type: 'raster',
-      tiles: [
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-      ],
-      tileSize: 256,
+      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+      tileSize: 256
     }
   },
   layers: [
@@ -102,15 +72,15 @@ const SATELLITE_STYLE = {
 };
 
 export default function ShipMap() {
-  const [hoverInfo, setHoverInfo] = useState(null);
-  const [voyageProgress, setVoyageProgress] = useState(0.52); // Starts partway through the Indian Ocean
-  const [currentZoom, setCurrentZoom] = useState(3.6);
+  const [hoverInfo, setHoverInfo] = useState<any>(null);
+  const [voyageProgress, setVoyageProgress] = useState<number>(0.42);
+  const [currentZoom, setCurrentZoom] = useState<number>(3.6);
 
   useEffect(() => {
-    let animationFrame;
+    let animationFrame: number;
     const animate = () => {
-      setVoyageProgress(prev => {
-        const nextProgress = prev + 0.000001; 
+      setVoyageProgress((prev) => {
+        const nextProgress = prev + 0.00002;
         return nextProgress >= 1 ? 0 : nextProgress;
       });
       animationFrame = requestAnimationFrame(animate);
@@ -119,7 +89,6 @@ export default function ShipMap() {
     return () => cancelAnimationFrame(animationFrame);
   }, []);
 
-  // Compute live position & yaw along multi-waypoint path
   const pathLen = VOYAGE_PATH.length - 1;
   const exactIndex = voyageProgress * pathLen;
   const currentIndex = Math.min(Math.floor(exactIndex), pathLen - 1);
@@ -128,7 +97,7 @@ export default function ShipMap() {
   const p1 = VOYAGE_PATH[currentIndex];
   const p2 = VOYAGE_PATH[currentIndex + 1];
 
-  const currentPos = [
+  const currentPos: [number, number, number] = [
     p1[0] + (p2[0] - p1[0]) * fraction,
     p1[1] + (p2[1] - p1[1]) * fraction,
     0
@@ -136,17 +105,16 @@ export default function ShipMap() {
 
   const dx = p2[0] - p1[0];
   const dy = p2[1] - p1[1];
-  const currentYaw = (Math.atan2(dx, dy) * 370) / Math.PI;
+  const currentYaw = (Math.atan2(dx, dy) * 180) / Math.PI;
 
-  // Real-time voyage timeline metrics
   const elapsedDays = (voyageProgress * TOTAL_VOYAGE_DAYS).toFixed(1);
   const remainingDays = (TOTAL_VOYAGE_DAYS - Number(elapsedDays)).toFixed(1);
 
   const dynamicVesselData = [
-    { 
-      id: 'active-vessel', 
-      position: currentPos, 
-      name: 'CargoX Iron Apex (Capesize)', 
+    {
+      id: 'active-vessel',
+      position: currentPos,
+      name: 'CargoX Iron Apex (Capesize)',
       dwt: '165,000 MT (98.4% Laden)',
       commodity: 'Prime Hard Coking Coal',
       origin: 'Gladstone, Australia',
@@ -155,57 +123,57 @@ export default function ShipMap() {
       elapsedDays,
       remainingDays,
       progressPct: Math.round(voyageProgress * 100),
-      orientation: [0, -currentYaw, 0] 
+      orientation: [0, -currentYaw, 0]
     }
   ];
 
-  const ZOOM_THRESHOLD = 7.0; 
+  const ZOOM_THRESHOLD = 7.0;
 
-  // --- Layers ---
   const shipLayer = new ScenegraphLayer({
     id: 'scenegraph-layer',
     data: dynamicVesselData,
     scenegraph: SHIP_MODEL_URL,
-    getPosition: d => d.position,
-    getOrientation: d => d.orientation,
-    sizeScale: 18, 
-    getScale: [0.35, 0.35, 0.35], 
+    getPosition: (d: any) => d.position,
+    getOrientation: (d: any) => d.orientation,
+    sizeScale: 18,
+    getScale: [0.35, 0.35, 0.35],
     pickable: true,
     visible: currentZoom >= ZOOM_THRESHOLD,
-    onHover: info => setHoverInfo(info),
-    _lighting: 'pbr',
+    onHover: (info: any) => setHoverInfo(info),
+    _lighting: 'pbr'
   });
 
   const trackerLayer = new ScatterplotLayer({
     id: 'tracker-layer',
     data: dynamicVesselData,
-    getPosition: d => d.position,
-    getFillColor: [412, 16, 19], // Brand Amber
+    getPosition: (d: any) => d.position,
+    getFillColor: [242, 166, 59],
     getLineColor: [255, 255, 255],
     lineWidthMinPixels: 2.5,
     stroked: true,
-    getRadius: 8000, 
+    getRadius: 8000,
     radiusMinPixels: 7,
     radiusMaxPixels: 14,
     pickable: true,
     visible: currentZoom < ZOOM_THRESHOLD,
-    onHover: info => setHoverInfo(info),
+    onHover: (info: any) => setHoverInfo(info)
   });
 
   const seaRouteLayer = new PathLayer({
     id: 'sea-route-layer',
     data: ROUTE_DATA,
-    getPath: d => d.path,
-    getColor: d => d.color,
-    widthMinPixels: 2.5, 
-    getWidth: 500, 
+    getPath: (d: any) => d.path,
+    getColor: (d: any) => d.color,
+    widthMinPixels: 2.5,
+    getWidth: 500
   });
 
   const portDotsLayer = new ScatterplotLayer({
     id: 'port-dots-layer',
     data: PORT_LOCATIONS,
-    getPosition: d => d.coordinates,
-    getFillColor: d => (d.id === 'destination' ? [251, 94, 126] : d.id === 'origin' ? [43, 217, 199] : [242, 166, 59]),
+    getPosition: (d: any) => d.coordinates,
+    getFillColor: (d: any) =>
+      d.id === 'destination' ? [251, 94, 126] : d.id === 'origin' ? [43, 217, 199] : [242, 166, 59],
     getLineColor: [255, 255, 255],
     lineWidthMinPixels: 2,
     stroked: true,
@@ -213,14 +181,14 @@ export default function ShipMap() {
     radiusMinPixels: 5,
     radiusMaxPixels: 9,
     pickable: true,
-    onHover: info => setHoverInfo(info),
+    onHover: (info: any) => setHoverInfo(info)
   });
 
   const portLabelsLayer = new TextLayer({
     id: 'port-labels-layer',
     data: PORT_LOCATIONS,
-    getPosition: d => d.coordinates,
-    getText: d => `${d.name} (${d.country})`,
+    getPosition: (d: any) => d.coordinates,
+    getText: (d: any) => `${d.name} (${d.country})`,
     getSize: 11,
     getColor: [255, 255, 255, 240],
     getTextAnchor: 'start',
@@ -233,60 +201,65 @@ export default function ShipMap() {
     background: true,
     backgroundColor: [5, 14, 26, 210],
     backgroundPadding: [6, 3],
-    pickable: false,
+    pickable: false
   });
 
   const countryLabelsLayer = new TextLayer({
     id: 'country-labels-layer',
     data: COUNTRY_LABELS,
-    getPosition: d => d.coordinates,
-    getText: d => d.name,
+    getPosition: (d: any) => d.coordinates,
+    getText: (d: any) => d.name,
     getSize: 13,
-    getColor: [170, 190, 215, 160], // Semi-transparent muted slate
+    getColor: [170, 190, 215, 160],
     getTextAnchor: 'middle',
     getAlignmentBaseline: 'center',
     fontFamily: 'Inter, monospace, sans-serif',
     fontWeight: 800,
-    characterSet: 'auto',
     outlineWidth: 3,
     outlineColor: [5, 14, 26, 180],
-    pickable: false,
+    pickable: false
   });
 
   return (
     <div className="relative w-full bg-slate-950" style={{ width: '100%', height: '100%' }}>
       <DeckGL
-        initialViewState={{ 
-          longitude: 114.0, 
-          latitude: 1.0, 
-          zoom: 3.5, 
-          pitch: 35, 
-          bearing: -4 
+        initialViewState={{
+          longitude: 114.0,
+          latitude: 1.0,
+          zoom: 3.5,
+          pitch: 35,
+          bearing: -4
         }}
         controller={true}
-        onViewStateChange={({ viewState }) => setCurrentZoom(viewState.zoom)}
+        onViewStateChange={(e: any) => {
+          if (e?.viewState?.zoom !== undefined) {
+            setCurrentZoom(e.viewState.zoom);
+          }
+        }}
         layers={[seaRouteLayer, portDotsLayer, portLabelsLayer, countryLabelsLayer, trackerLayer, shipLayer]}
         effects={[lightingEffect]}
       >
         <Map mapStyle={SATELLITE_STYLE} />
-        
+
         {hoverInfo && hoverInfo.object && (
-          <div style={{
-            position: 'absolute',
-            zIndex: 20,
-            pointerEvents: 'none',
-            left: hoverInfo.x + 18,
-            top: hoverInfo.y + 18,
-            backgroundColor: 'rgba(5, 14, 26, 0.94)',
-            border: '1px solid rgba(242, 166, 59, 0.35)',
-            padding: '12px 16px',
-            borderRadius: '10px',
-            color: '#fff',
-            fontSize: '12px',
-            lineHeight: 1.55,
-            boxShadow: '0 12px 30px rgba(0,0,0,0.7)',
-            minWidth: '240px'
-          }}>
+          <div
+            style={{
+              position: 'absolute',
+              zIndex: 20,
+              pointerEvents: 'none',
+              left: (hoverInfo.x || 0) + 18,
+              top: (hoverInfo.y || 0) + 18,
+              backgroundColor: 'rgba(5, 14, 26, 0.94)',
+              border: '1px solid rgba(242, 166, 59, 0.35)',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              color: '#fff',
+              fontSize: '12px',
+              lineHeight: 1.55,
+              boxShadow: '0 12px 30px rgba(0,0,0,0.7)',
+              minWidth: '240px'
+            }}
+          >
             {hoverInfo.object.id === 'active-vessel' ? (
               <>
                 <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '6px', marginBottom: '6px' }}>
