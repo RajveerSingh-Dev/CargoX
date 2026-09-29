@@ -7,6 +7,6 @@
     {
       "binding": "NEXT_CACHE_WORKERS_KV", // REQUIRED FOR THE CACHE
       "id": "65407d3027d440beb19ec73bd2ac3ce6"
-    }
+    }// Add more KV namespaces here if needed
   ]
 }
