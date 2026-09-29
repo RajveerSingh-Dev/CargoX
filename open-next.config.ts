@@ -4,15 +4,24 @@ import type { OpenNextConfig } from "@opennextjs/cloudflare";
 export default {
   default: {
     override: {
-      wrapper: "cloudflare-node", // Ensures node-postgres compatibility
+      wrapper: "cloudflare-node",
       converter: "edge",
-      // Reverted to strings for type-checking compliance during build
-      incrementalCache: "api",
-      tagCache: "api",
-      queue: "api",
+      proxyExternalRequest: "fetch",
+      incrementalCache: "dummy",
+      tagCache: "dummy",
+      queue: "dummy",
     },
   },
+  edgeExternals: ["node:crypto"],
   middleware: {
     external: true,
+    override: {
+      wrapper: "cloudflare-edge",
+      converter: "edge",
+      proxyExternalRequest: "fetch",
+      incrementalCache: "dummy",
+      tagCache: "dummy",
+      queue: "dummy",
+    },
   },
 } as OpenNextConfig;
