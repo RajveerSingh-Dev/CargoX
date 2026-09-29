@@ -1,12 +1,17 @@
 {
   "name": "cargox",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2024-09-23", // Use a recent date
-  "compatibility_flags": ["nodejs_compat"], // Required for database connection
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": ["nodejs_compat"],
+  // Add this specific block to serve your CSS/JS chunks
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
   "kv_namespaces": [
     {
-      "binding": "NEXT_CACHE_WORKERS_KV", // REQUIRED FOR THE CACHE
+      "binding": "NEXT_CACHE_WORKERS_KV",
       "id": "65407d3027d440beb19ec73bd2ac3ce6"
-    }// Add more KV namespaces here if needed
+    }
   ]
 }
