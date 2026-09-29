@@ -1,0 +1,12 @@
+{
+  "name": "cargox",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2024-09-23", // OpenNext needs a recent date
+  "compatibility_flags": ["nodejs_compat"], // Required for database connection
+  "kv_namespaces": [
+    {
+      "binding": "NEXT_CACHE_WORKERS_KV", // DO NOT CHANGE THIS NAME
+      "id": "PASTE_THE_KV_ID_FROM_CLOUDFLARE_DASHBOARD_HERE"
+    }
+  ]
+}

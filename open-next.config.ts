@@ -3,12 +3,12 @@ import type { OpenNextConfig } from "@opennextjs/cloudflare";
 export default {
   default: {
     override: {
-      wrapper: "cloudflare-node",
+      wrapper: "cloudflare-node", // Ensures node-postgres compatibility
       converter: "edge",
-      // Use dynamic imports pointing to the Cloudflare KV cache instead of the "api" string
-      incrementalCache: () => import("@opennextjs/cloudflare/kv-cache"),
-      tagCache: () => import("@opennextjs/cloudflare/kv-cache"),
-      queue: () => import("@opennextjs/cloudflare/queue"),
+      // Reverted to strings for type-checking compliance during build
+      incrementalCache: "api",
+      tagCache: "api",
+      queue: "api",
     },
   },
   middleware: {
