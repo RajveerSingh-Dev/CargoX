@@ -6,7 +6,7 @@
   "kv_namespaces": [
     {
       "binding": "NEXT_CACHE_WORKERS_KV", // REQUIRED FOR THE CACHE
-      "id": "PASTE_THE_KV_ID_FROM_CLOUDFLARE_DASHBOARD_HERE"
+      "id": "65407d3027d440beb19ec73bd2ac3ce6"
     }
   ]
 }
