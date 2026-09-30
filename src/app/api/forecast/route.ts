@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { analyzeTiming, forecastSeries } from "@/lib/forecast";
 import { getClasses, getRoutes, getSeries } from "@/lib/queries";
 
-export const dynamic = "force-dynamic";
+// 1. Removed force-dynamic to allow Cloudflare Edge caching
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -14,7 +14,6 @@ export async function GET(req: NextRequest) {
   const cls = classes.find((c) => c.code === classCode) ?? classes[1] ?? classes[0];
   const route =
     routes.find((r) => r.id === routeId) ??
-    // default: a corridor the class can actually trade
     routes.find((r) => cls.draftM <= r.origin.maxDraftM && cls.draftM <= r.dest.maxDraftM) ??
     routes[0];
 
@@ -22,9 +21,12 @@ export async function GET(req: NextRequest) {
   if (series.length < 200) {
     return NextResponse.json({ error: "Insufficient history for this pairing" }, { status: 404 });
   }
+  
   const fc = forecastSeries(series, horizon);
   const timing = analyzeTiming(fc);
 
+  // 2. Add Cache-Control headers. Cloudflare will execute the JS math exactly once, 
+  // then serve the instant 0ms cached result for the next hour.
   return NextResponse.json({
     meta: {
       classes: classes.map((c) => ({
@@ -47,5 +49,9 @@ export async function GET(req: NextRequest) {
     points: fc.points,
     stats: fc.stats,
     timing,
+  }, {
+    headers: {
+      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+    }
   });
 }

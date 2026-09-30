@@ -80,7 +80,7 @@ export default function ShipMap() {
     let animationFrame: number;
     const animate = () => {
       setVoyageProgress((prev) => {
-        const nextProgress = prev + 0.00002;
+        const nextProgress = prev + 0.000001;
         return nextProgress >= 1 ? 0 : nextProgress;
       });
       animationFrame = requestAnimationFrame(animate);
@@ -104,8 +104,8 @@ export default function ShipMap() {
   ];
 
   const dx = p2[0] - p1[0];
-  const dy = p2[1] - p1[1];
-  const currentYaw = (Math.atan2(dx, dy) * 180) / Math.PI;
+  const dy = p2[1] - p1[1]; 
+  const currentYaw = (Math.atan2(dx, dy) * 354) / Math.PI;
 
   const elapsedDays = (voyageProgress * TOTAL_VOYAGE_DAYS).toFixed(1);
   const remainingDays = (TOTAL_VOYAGE_DAYS - Number(elapsedDays)).toFixed(1);
@@ -135,8 +135,8 @@ export default function ShipMap() {
     scenegraph: SHIP_MODEL_URL,
     getPosition: (d: any) => d.position,
     getOrientation: (d: any) => d.orientation,
-    sizeScale: 18,
-    getScale: [0.35, 0.35, 0.35],
+    sizeScale: 90,
+    getScale: [0.35, 0.95, 0.35],
     pickable: true,
     visible: currentZoom >= ZOOM_THRESHOLD,
     onHover: (info: any) => setHoverInfo(info),
@@ -147,7 +147,7 @@ export default function ShipMap() {
     id: 'tracker-layer',
     data: dynamicVesselData,
     getPosition: (d: any) => d.position,
-    getFillColor: [242, 166, 59],
+    getFillColor: [299, 16, 59],
     getLineColor: [255, 255, 255],
     lineWidthMinPixels: 2.5,
     stroked: true,
