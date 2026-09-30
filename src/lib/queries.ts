@@ -28,7 +28,8 @@ export const getClasses = cache(async (): Promise<VesselClass[]> => {
     const rows = await db.select().from(vesselClasses).orderBy(asc(vesselClasses.typicalDwt));
     return rows;
   } catch (error) {
-    console.warn("Database connection failed during build/fetch. Returning empty array.");
+    console.error("REAL DB ERROR:", error);
+console.warn("Database connection failed during build/fetch. Returning empty array.");
     return [];
   }
 });
