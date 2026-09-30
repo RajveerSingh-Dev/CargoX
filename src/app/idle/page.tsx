@@ -16,7 +16,7 @@ import {
 import { Badge, Card, PageHeader, SectionLabel, fmtDate } from "@/components/ui";
 import { buildIdlePlan, getMarketBoard } from "@/lib/insights";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 14400; // Cache this page on the Edge for 4 hours
 
 const OPEX: Record<string, number> = { HANDY: 5600, SUPRAMAX: 6300, PANAMAX: 6900, CAPE: 7900 };
 const USD_TO_INR = 84;

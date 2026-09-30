@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/ui";
 import { OptimizerForm } from "./optimizer-form";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 14400; // Cache this page on the Edge for 4 hours
 
 export default function OptimizerPage() {
   return (

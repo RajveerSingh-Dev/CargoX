@@ -18,7 +18,7 @@ import { Gauge } from "@/components/charts";
 import { getPorts, getRoutes } from "@/lib/queries";
 import { computeRouteRisk, getMarketBoard, getRouteForecast } from "@/lib/insights";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 14400; // Cache this page on the Edge for 4 hours
 
 const TYPE_META: Record<string, { icon: typeof Flame; tone: "bad" | "warn" | "neutral" | "good" | "mute" }> = {
   VOLATILITY: { icon: Activity, tone: "warn" },

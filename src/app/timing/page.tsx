@@ -6,7 +6,9 @@ import { Badge, Card, PageHeader, SectionLabel, fmtDateShort, fmtUsd } from "@/c
 import { getMarketBoard } from "@/lib/insights";
 import { mean } from "@/lib/forecast";
 
-export const dynamic = "force-dynamic";
+// Replace: export const dynamic = "force-dynamic";
+// With:
+export const revalidate = 14400; // Cache this page on the Edge for 4 hours
 
 function heatColor(deltaPct: number): string {
   // negative delta = cheaper than spot = attractive entry (teal); positive = premium (rose)
