@@ -3,7 +3,8 @@ import { getClasses, getPorts, getRoutes } from "@/lib/queries";
 import { estDistanceNm, optimizeFleet } from "@/lib/voyage";
 import { getClassForecast, getRouteForecast } from "@/lib/insights";
 
-export const dynamic = "force-dynamic";
+// 1. OPTIMIZATION: Remove force-dynamic to allow Edge caching
+export const revalidate = 3600; // Cache unique parameter combinations for 1 hour
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -23,19 +24,22 @@ export async function GET(req: NextRequest) {
   const route = routes.find((r) => r.originPortId === origin.id && r.destPortId === dest.id) ?? null;
   const distanceNm = estDistanceNm(origin, dest, route?.distanceNm);
 
-  // forward hire reference per class (next ~30 days of the P50 path)
+  // 2. OPTIMIZATION: Execute all forecast ML logic in parallel
   const hireByClass: Record<string, number> = {};
-  for (const cls of classes) {
-    try {
-      const fc = route ? await getRouteForecast(cls.id, route.id, 60) : await getClassForecast(cls.id, 90);
-      hireByClass[cls.code] = fc.stats.fwd30;
-    } catch {
-      hireByClass[cls.code] = 0;
-    }
-  }
+  await Promise.all(
+    classes.map(async (cls) => {
+      try {
+        const fc = route ? await getRouteForecast(cls.id, route.id, 60) : await getClassForecast(cls.id, 90);
+        hireByClass[cls.code] = fc.stats.fwd30;
+      } catch {
+        hireByClass[cls.code] = 0;
+      }
+    })
+  );
 
   const result = optimizeFleet(classes, route, origin, dest, distanceNm, cargoT, hireByClass);
 
+  // 3. OPTIMIZATION: Tell Cloudflare to cache the final output instantly
   return NextResponse.json({
     meta: {
       ports: ports.map((p) => ({
@@ -51,5 +55,9 @@ export async function GET(req: NextRequest) {
       ...result,
       route: route ? { code: route.code, commodity: route.commodity, direction: route.direction, nm: route.distanceNm } : null,
     },
+  }, {
+    headers: {
+      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+    }
   });
 }
