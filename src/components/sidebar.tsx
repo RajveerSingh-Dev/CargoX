@@ -1,5 +1,5 @@
 "use client";
-
+import { CurrencyToggle } from "@/components/currencyToggle"; // Adjust path if necessary
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -85,6 +85,7 @@ export function Sidebar() {
       {/* Settings & Status Footer */}
       <div className="space-y-4 border-t border-line p-4">
         {/* Appearance Toggle */}
+        <CurrencyToggle />
         <ThemeToggle />
 
         {/* Live Model Indicator */}

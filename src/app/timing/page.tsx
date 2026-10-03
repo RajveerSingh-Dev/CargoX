@@ -2,12 +2,11 @@ import { Fragment } from "react";
 import clsx from "clsx";
 import Link from "next/link";
 import { CalendarClock, Hourglass, Layers, PiggyBank } from "lucide-react";
-import { Badge, Card, PageHeader, SectionLabel, fmtDateShort, fmtUsd } from "@/components/ui";
+import { Badge, Card, PageHeader, SectionLabel, fmtDateShort } from "@/components/ui";
+import { FormatPrice } from "@/components/FormatPrice"; // <-- New dynamic bridge imported
 import { getMarketBoard } from "@/lib/insights";
 import { mean } from "@/lib/forecast";
 
-// Replace: export const dynamic = "force-dynamic";
-// With:
 export const revalidate = 14400; // Cache this page on the Edge for 4 hours
 
 function heatColor(deltaPct: number): string {
@@ -130,7 +129,7 @@ export default async function TimingPage() {
                   {fmtDateShort(best90.startDate)} → {fmtDateShort(best90.endDate)}
                 </p>
                 <p className="num mt-0.5 text-[11.5px] text-mist">
-                  avg {fmtUsd(best90.avgRate)}/d ·{" "}
+                  avg <FormatPrice value={best90.avgRate} />/d ·{" "}
                   <span className={strat.edgePct >= 0 ? "text-teal" : "text-rose"}>
                     {strat.edgePct >= 0 ? "+" : ""}
                     {strat.edgePct.toFixed(1)}% vs spot
@@ -140,15 +139,15 @@ export default async function TimingPage() {
               <div className="mt-4 space-y-1.5 border-t border-line/60 pt-3.5 text-[11px]">
                 <div className="flex justify-between">
                   <span className="text-fog">6-mo contract quote</span>
-                  <span className="num text-paper">{fmtUsd(fixedRefRate)}/d</span>
+                  <span className="num text-paper"><FormatPrice value={fixedRefRate} />/d</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-fog">Expected daily spot (P50)</span>
-                  <span className="num text-paper">{fmtUsd(spotPath180)}/d</span>
+                  <span className="num text-paper"><FormatPrice value={spotPath180} />/d</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-fog">Price protection saved</span>
-                  <span className="num text-teal">{fmtUsd(strat.tailRiskCost)}/d</span>
+                  <span className="num text-teal"><FormatPrice value={strat.tailRiskCost} />/d</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-fog">Forecast certainty</span>
@@ -268,10 +267,10 @@ export default async function TimingPage() {
                     <td className="px-4 py-3.5">
                       <Badge tone={strat.tone}>{strat.verdict}</Badge>
                     </td>
-                    <td className="num px-4 py-3.5 text-paper">{fmtUsd(spotNow)}</td>
-                    <td className="num px-4 py-3.5 text-paper">{fmtUsd(spotPath180)}</td>
+                    <td className="num px-4 py-3.5 text-paper"><FormatPrice value={spotNow} /></td>
+                    <td className="num px-4 py-3.5 text-paper"><FormatPrice value={spotPath180} /></td>
                     <td className="num px-4 py-3.5 font-semibold text-brand-soft">
-                      {fmtUsd(fixablePeriod)}
+                      <FormatPrice value={fixablePeriod} />
                     </td>
                     <td className="px-4 py-3.5">
                       <span

@@ -8,11 +8,12 @@ import {
   Ship,
   TrendingUp,
 } from "lucide-react";
-import { Badge, Card, Delta, PageHeader, SectionLabel, fmtDate, fmtPct, fmtUsd } from "@/components/ui";
+import { Badge, Card, Delta, PageHeader, SectionLabel, fmtDate, fmtPct } from "@/components/ui";
 import { ForecastChart, Gauge, LegendRow, Spark } from "@/components/charts";
 import { analyzeTiming, forecastSeries, mean } from "@/lib/forecast";
 import { getClassSeries } from "@/lib/queries";
 import { getMarketBoard } from "@/lib/insights";
+import { DynamicPrice } from "@/components/DynamicPrice"; // <-- New dynamic bridge
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export default async function OverviewPage() {
         kicker={`Market pulse · ${fmtDate(board.todayISO)} · India East Coast dry bulk`}
         title="From reactive fixing to"
         accent="predictive chartering."
-        description="A decision layer over 44 000 rate observations: seasonal decomposed Holt ensembles forecast earnings per vessel class and corridor, then translate them into fixing windows, vessel choice and risk posture."
+        description="A decision layer over 44 000 rate observations: seasonal decomposed Holt ensembles forecast earnings per vessel class and corridor, then translate them into fixing windows, vessel choice and risk posture."
         right={
           <div className="flex gap-3">
             <Link href="/optimizer" className="group inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[13px] font-semibold text-ink-950 shadow-[0_10px_30px_-8px_rgba(242,166,59,0.6)] transition-transform hover:-translate-y-0.5">
@@ -74,7 +75,9 @@ export default async function OverviewPage() {
                 </div>
                 <div className="mt-4 flex items-end justify-between gap-3">
                   <div>
-                    <p className="num text-[26px] font-bold leading-none tracking-tight text-paper">{fmtUsd(c.fc.stats.spot)}</p>
+                    <p className="num text-[26px] font-bold leading-none tracking-tight text-paper">
+                      <DynamicPrice value={c.fc.stats.spot} />
+                    </p>
                     <p className="mt-1.5 text-[10.5px] text-fog">TCE / day · fwd 90d {fmtPct(c.fc.stats.trendPct90)}</p>
                   </div>
                   <div className="w-[104px] shrink-0">
@@ -112,16 +115,16 @@ export default async function OverviewPage() {
           <ForecastChart history={compositeSeries} forecast={compositeFc.points} height={360} />
           <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-line/60 pt-4 sm:grid-cols-3 xl:grid-cols-6">
             {[
-              ["Spot now", fmtUsd(spotNow)],
-              ["Fwd 30d", `${fmtUsd(compositeFc.stats.fwd30)} (${fmtPct(compositeFc.stats.trendPct30)})`],
-              ["Fwd 90d", `${fmtUsd(compositeFc.stats.fwd90)} (${fmtPct(compositeFc.stats.trendPct90)})`],
-              ["Fwd 180d", fmtUsd(compositeFc.stats.fwd180)],
+              ["Spot now", <DynamicPrice key="1" value={spotNow} />],
+              ["Fwd 30d", <span key="2"><DynamicPrice value={compositeFc.stats.fwd30} /> ({fmtPct(compositeFc.stats.trendPct30)})</span>],
+              ["Fwd 90d", <span key="3"><DynamicPrice value={compositeFc.stats.fwd90} /> ({fmtPct(compositeFc.stats.trendPct90)})</span>],
+              ["Fwd 180d", <DynamicPrice key="4" value={compositeFc.stats.fwd180} />],
               ["Holdout MAPE", `${compositeFc.stats.holdoutMape}%`],
               ["Vol 20d ann.", `${compositeFc.stats.vol20}%`],
-            ].map(([l, v]) => (
-              <div key={l}>
-                <p className="eyebrow !text-[9px]">{l}</p>
-                <p className="num mt-1 text-[13px] font-semibold text-paper">{v}</p>
+            ].map(([l, v], idx) => (
+              <div key={idx}>
+                <p className="eyebrow !text-[9px]">{l as React.ReactNode}</p>
+                <div className="num mt-1 text-[13px] font-semibold text-paper">{v as React.ReactNode}</div>
               </div>
             ))}
           </div>
@@ -142,13 +145,13 @@ export default async function OverviewPage() {
             <p className="mt-3 text-[12.5px] leading-relaxed text-mist">{compositeTiming.spotVsPeriod.recommendation}</p>
             <div className="mt-5 grid grid-cols-3 gap-2">
               {[
-                { l: "Spot path 180d", v: fmtUsd(compositeTiming.spotVsPeriod.spotPath180) },
-                { l: "Fixable period", v: fmtUsd(compositeTiming.spotVsPeriod.fixedRefRate) },
-                { l: "Tail premium removed", v: fmtUsd(compositeTiming.spotVsPeriod.tailRiskCost) },
-              ].map((x) => (
-                <div key={x.l} className="rounded-xl border border-line bg-ink-800/60 px-3 py-2.5">
+                { l: "Spot path 180d", v: <DynamicPrice value={compositeTiming.spotVsPeriod.spotPath180} /> },
+                { l: "Fixable period", v: <DynamicPrice value={compositeTiming.spotVsPeriod.fixedRefRate} /> },
+                { l: "Tail premium removed", v: <DynamicPrice value={compositeTiming.spotVsPeriod.tailRiskCost} /> },
+              ].map((x, idx) => (
+                <div key={idx} className="rounded-xl border border-line bg-ink-800/60 px-3 py-2.5">
                   <p className="eyebrow !text-[8.5px]">{x.l}</p>
-                  <p className="num mt-1 text-[14px] font-bold text-paper">{x.v}</p>
+                  <div className="num mt-1 text-[14px] font-bold text-paper">{x.v}</div>
                 </div>
               ))}
             </div>

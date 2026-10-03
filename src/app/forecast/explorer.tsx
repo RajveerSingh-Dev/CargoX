@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Loader2, Route, Waves } from "lucide-react";
 import { Badge, Card, Delta, SectionLabel, fmtDateShort } from "@/components/ui";
 import { ForecastChart, LegendRow } from "@/components/charts";
+import { useCurrency } from "@/lib/CurrencyContext";
 
 interface ApiPayload {
   meta: {
@@ -35,9 +36,6 @@ interface ApiPayload {
 
 const HORIZONS = [60, 120, 180, 365];
 const MONTH_L = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
-const USD_TO_INR = 84;
-
-const fmtInr = (usd: number) => `₹${Math.round(usd * USD_TO_INR).toLocaleString("en-IN")}`;
 
 export function ForecastExplorer({ initialClass, initialRoute }: { initialClass?: string; initialRoute?: number }) {
   const [classCode, setClassCode] = useState(initialClass ?? "SUPRAMAX");
@@ -45,7 +43,10 @@ export function ForecastExplorer({ initialClass, initialRoute }: { initialClass?
   const [horizon, setHorizon] = useState(180);
   const [data, setData] = useState<ApiPayload | null>(null);
   const [loading, setLoading] = useState(true);
-
+  
+  // Connect to the global currency toggle
+  const { formatCurrency } = useCurrency(); 
+  
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -156,10 +157,10 @@ export function ForecastExplorer({ initialClass, initialRoute }: { initialClass?
             <ForecastChart history={data.history} forecast={data.points} height={380} />
             <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-line/60 pt-4 sm:grid-cols-3 xl:grid-cols-6">
               {[
-                ["Spot TCE", fmtInr(data.stats.spot)],
-                ["Fwd 30d", `${fmtInr(data.stats.fwd30)} (${data.stats.trendPct30 > 0 ? "+" : ""}${data.stats.trendPct30}%)`],
-                ["Fwd 90d", `${fmtInr(data.stats.fwd90)} (${data.stats.trendPct90 > 0 ? "+" : ""}${data.stats.trendPct90}%)`],
-                ["Fwd 180d", fmtInr(data.stats.fwd180)],
+                ["Spot TCE", formatCurrency(data.stats.spot)],
+                ["Fwd 30d", `${formatCurrency(data.stats.fwd30)} (${data.stats.trendPct30 > 0 ? "+" : ""}${data.stats.trendPct30}%)`],
+                ["Fwd 90d", `${formatCurrency(data.stats.fwd90)} (${data.stats.trendPct90 > 0 ? "+" : ""}${data.stats.trendPct90}%)`],
+                ["Fwd 180d", formatCurrency(data.stats.fwd180)],
                 ["Holdout MAPE", `${data.stats.holdoutMape}%`],
                 ["Vol 20d ann.", `${data.stats.vol20}% · P${data.stats.volPercentile}`],
               ].map(([l, v]) => (
@@ -208,7 +209,7 @@ export function ForecastExplorer({ initialClass, initialRoute }: { initialClass?
                       <td className="num px-3.5 py-2.5 text-mist">
                         {fmtDateShort(w.startDate)} → {fmtDateShort(w.endDate)}
                       </td>
-                      <td className="num px-3.5 py-2.5 text-paper">{fmtInr(w.avgRate)}</td>
+                      <td className="num px-3.5 py-2.5 text-paper">{formatCurrency(w.avgRate)}</td>
                       <td className="px-3.5 py-2.5 text-right"><Delta value={w.vsSpotPct} invert /></td>
                     </tr>
                   ))}

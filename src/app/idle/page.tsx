@@ -15,18 +15,11 @@ import {
 } from "lucide-react";
 import { Badge, Card, PageHeader, SectionLabel, fmtDate } from "@/components/ui";
 import { buildIdlePlan, getMarketBoard } from "@/lib/insights";
+import { DynamicPrice } from "@/components/DynamicPrice"; // <-- New dynamic bridge
 
 export const revalidate = 14400; // Cache this page on the Edge for 4 hours
 
 const OPEX: Record<string, number> = { HANDY: 5600, SUPRAMAX: 6300, PANAMAX: 6900, CAPE: 7900 };
-const USD_TO_INR = 84;
-
-const fmtInrCompact = (usd: number) => {
-  const inr = usd * USD_TO_INR;
-  if (inr >= 10000000) return `₹${(inr / 10000000).toFixed(2)} Cr`;
-  if (inr >= 100000) return `₹${(inr / 100000).toFixed(1)}L`;
-  return `₹${Math.round(inr).toLocaleString("en-IN")}`;
-};
 
 export default async function IdlePage({
   searchParams,
@@ -40,7 +33,6 @@ export default async function IdlePage({
 
   if (!plan) return null;
   const opex = OPEX[selected] ?? 6300;
-  const dailyBurnInr = Math.round(opex * USD_TO_INR);
 
   const daysUntil = (iso: string) =>
     Math.max(0, Math.round((new Date(iso + "T00:00:00Z").getTime() - new Date(board.todayISO + "T00:00:00Z").getTime()) / 86400000));
@@ -104,15 +96,17 @@ export default async function IdlePage({
         <Card className="anim-fade-up flex flex-col">
           <SectionLabel>Cost of doing nothing</SectionLabel>
           <div className="flex flex-1 flex-col justify-center">
-            <p className="num text-[44px] font-bold leading-none text-rose">₹{dailyBurnInr.toLocaleString("en-IN")}</p>
+            <p className="num text-[44px] font-bold leading-none text-rose">
+              <DynamicPrice value={opex} />
+            </p>
             <p className="mt-2 text-[11.5px] text-fog">daily cash burn of an idle {selected} (opex + finance, zero revenue)</p>
             <div className="mt-5 space-y-2 text-[12px]">
               {[
-                ["10 idle days", `${fmtInrCompact(opex * 10)} lost`],
-                ["30 idle days", `${fmtInrCompact(opex * 30)} lost`],
-                ["Ballast 6 days + prompt cargo", `≈ -${fmtInrCompact(Math.max(6, Math.round((opex * 6) / 1000 - 9)) * 1000)} net better than waiting`],
-              ].map(([l, v]) => (
-                <div key={l} className="flex items-center justify-between border-b border-line/50 pb-2 last:border-0">
+                ["10 idle days", <><DynamicPrice value={opex * 10} compact /> lost</>],
+                ["30 idle days", <><DynamicPrice value={opex * 30} compact /> lost</>],
+                ["Ballast 6 days + prompt cargo", <>≈ -<DynamicPrice value={Math.max(6, Math.round((opex * 6) / 1000) * 1000)} compact /> net better than waiting</>],
+              ].map(([l, v], idx) => (
+                <div key={idx} className="flex items-center justify-between border-b border-line/50 pb-2 last:border-0">
                   <span className="text-fog">{l}</span>
                   <span className="num font-medium text-paper">{v}</span>
                 </div>
@@ -151,7 +145,7 @@ export default async function IdlePage({
                     <span className="text-mist">{r.dest}</span>
                   </td>
                   <td className="px-4 py-3.5 text-fog">{r.commodity}</td>
-                  <td className="num px-4 py-3.5 font-semibold text-paper">₹{Math.round(r.fwd30 * USD_TO_INR).toLocaleString("en-IN")}</td>
+                  <td className="num px-4 py-3.5 font-semibold text-paper"><DynamicPrice value={r.fwd30} /></td>
                   <td className={clsx("num px-4 py-3.5", r.trendPct30 >= 0 ? "text-teal" : "text-rose")}>
                     {r.trendPct30 >= 0 ? "+" : ""}{r.trendPct30}%
                   </td>
@@ -197,7 +191,7 @@ export default async function IdlePage({
             </div>
             <p className="mt-1.5 text-[12.5px] font-semibold text-paper">Immediate Ballast Release</p>
             <p className="mt-1 text-[11px] leading-relaxed text-fog">
-              Steer empty toward high-absorption hubs (Mina Saqr limestone or Muara Berau coal). Proves ~₹24.4L net better than waiting at East Coast anchorages.
+              Steer empty toward high-absorption hubs (Mina Saqr limestone or Muara Berau coal). Proves ~<DynamicPrice value={29047} compact /> net better than waiting at East Coast anchorages.
             </p>
           </div>
 

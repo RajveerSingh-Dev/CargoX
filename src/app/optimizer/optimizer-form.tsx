@@ -17,6 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Badge, Card, SectionLabel } from "@/components/ui";
+import { useCurrency } from "@/lib/CurrencyContext"; // Import the global hook
 
 interface PortMeta {
   id: number; code: string; name: string; country: string; region: string; isIndiaEC: boolean;
@@ -47,10 +48,10 @@ interface Payload {
 const CARGO_PRESETS = [27000, 33000, 50000, 55000, 75000, 170000];
 const COMMODITIES = ["Thermal Coal", "Coking Coal", "Iron Ore", "Limestone", "Cement Clinker", "Bauxite", "Fertilizer (Urea)", "Steel Products"];
 
-const USD_TO_INR = 84;
-
 export function OptimizerForm() {
-  const [currency, setCurrency] = useState<"INR" | "USD">("INR");
+  // Grab the global currency state, the toggle function, and the live exchange rate
+  const { currency, toggleCurrency, rate } = useCurrency();
+  
   const [origin, setOrigin] = useState("IDTAB");
   const [dest, setDest] = useState("INKRI");
   const [cargo, setCargo] = useState(55000);
@@ -58,25 +59,25 @@ export function OptimizerForm() {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Currency Formatters
+  // Dynamic Currency Formatters
   const fmtRate = (usd: number) =>
     currency === "INR"
-      ? `₹${Math.round(usd * USD_TO_INR).toLocaleString("en-IN")}`
+      ? `₹${Math.round(usd * rate).toLocaleString("en-IN")}`
       : `$${usd.toFixed(2)}`;
 
   const fmtDaily = (usd: number) =>
     currency === "INR"
-      ? `₹${Math.round(usd * USD_TO_INR).toLocaleString("en-IN")}`
+      ? `₹${Math.round(usd * rate).toLocaleString("en-IN")}`
       : `$${usd.toLocaleString()}`;
 
   const fmtTotal = (usd: number) =>
     currency === "INR"
-      ? `₹${((usd * USD_TO_INR) / 1e7).toFixed(2)} Cr`
+      ? `₹${((usd * rate) / 1e7).toFixed(2)} Cr`
       : `$${(usd / 1e6).toFixed(2)}M`;
 
   const fmtSubK = (usd: number) =>
     currency === "INR"
-      ? `₹${((usd * USD_TO_INR) / 1e5).toFixed(0)}L`
+      ? `₹${((usd * rate) / 1e5).toFixed(0)}L`
       : `$${(usd / 1000).toFixed(0)}k`;
 
   useEffect(() => {
@@ -175,12 +176,13 @@ export function OptimizerForm() {
             >
               {COMMODITIES.map((c) => <option key={c}>{c}</option>)}
             </select>
-            {/* Currency Switch */}
+            
+            {/* Context-aware inline currency switch */}
             <div className="mt-2 flex items-center gap-1.5">
               <span className="eyebrow !text-[9px] text-fog">Currency:</span>
               <button
                 type="button"
-                onClick={() => setCurrency("USD")}
+                onClick={() => currency !== "USD" && toggleCurrency()}
                 className={clsx(
                   "num rounded-md border px-2 py-1 text-[10px] font-semibold transition-colors",
                   currency === "USD" ? "border-brand/50 bg-brand/15 text-brand-soft" : "border-line text-fog hover:text-mist"
@@ -190,7 +192,7 @@ export function OptimizerForm() {
               </button>
               <button
                 type="button"
-                onClick={() => setCurrency("INR")}
+                onClick={() => currency !== "INR" && toggleCurrency()}
                 className={clsx(
                   "num rounded-md border px-2 py-1 text-[10px] font-semibold transition-colors",
                   currency === "INR" ? "border-brand/50 bg-brand/15 text-brand-soft" : "border-line text-fog hover:text-mist"

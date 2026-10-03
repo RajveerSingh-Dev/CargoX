@@ -1,5 +1,7 @@
 "use client";
 
+import { useCurrency } from "@/lib/CurrencyContext";
+
 import {
   Area,
   AreaChart,
@@ -48,33 +50,47 @@ interface HistPoint {
   value: number;
 }
 
-function ForecastTip({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey?: string; value?: number }>; label?: string }) {
+function ForecastTip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+  const { formatCurrency } = useCurrency();
+  
   if (!active || !payload?.length) return null;
-  const get = (k: string) => payload.find((p) => p.dataKey === k)?.value;
-  const hist = get("hist");
-  const p50 = get("p50");
+  
+  const row = payload[0].payload;
+
+  const hist = row.hist;
+  const p50 = row.p50;
+  
+  const min = row.oLo;
+  const max = min != null && row.outer != null ? min + row.outer : null;
+
   return (
-    <div className="panel !rounded-lg px-3 py-2.5 text-[11px] shadow-xl">
-      <div className="eyebrow !text-[9px] mb-1.5">{label ? fmtFull(label) : ""}</div>
-      <div className="space-y-1 font-mono">
+    <div style={{ backgroundColor: "#0d1524", borderColor: "rgba(126, 152, 206, 0.24)", color: "#e8edf8" }} className="!rounded-lg border px-4 py-3 text-[13px] shadow-xl">
+      <div className="eyebrow !text-[11px] mb-2.5" style={{ color: "#7e98ce" }}>{label ? fmtFull(label) : ""}</div>
+      <div className="space-y-2 font-mono">
         {hist != null && (
-          <div className="flex items-center justify-between gap-6">
-            <span className="text-fog">Actual TCE</span>
-            <span className="text-paper">${Number(hist).toLocaleString()}</span>
+          <div className="flex items-center justify-between gap-8">
+            <span style={{ color: "#7e98ce" }}>Actual TCE</span>
+            <span style={{ color: "#e8edf8" }}>{formatCurrency(Number(hist))}</span>
           </div>
         )}
         {p50 != null && (
           <>
-            <div className="flex items-center justify-between gap-6">
-              <span className="text-fog">Forecast P50</span>
-              <span className="text-brand-soft">${Number(p50).toLocaleString()}</span>
+            {max != null && (
+              <div className="flex items-center justify-between gap-8">
+                <span style={{ color: "#7e98ce" }}>Max (P90)</span>
+                <span style={{ color: "#e8edf8" }}>{formatCurrency(Number(max))}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-8">
+              <span style={{ color: "#f2a63b" }} className="font-semibold">Average (P50)</span>
+              <span style={{ color: "#f2a63b" }} className="font-semibold">{formatCurrency(Number(p50))}</span>
             </div>
-            <div className="flex items-center justify-between gap-6">
-              <span className="text-fog">Band P10–P90</span>
-              <span className="text-mist">
-                ${Number(get("oLo") ?? 0).toLocaleString()} – ${Number((get("oLo") ?? 0) + (get("outer") ?? 0)).toLocaleString()}
-              </span>
-            </div>
+            {min != null && (
+              <div className="flex items-center justify-between gap-8">
+                <span style={{ color: "#7e98ce" }}>Min (P10)</span>
+                <span style={{ color: "#e8edf8" }}>{formatCurrency(Number(min))}</span>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -99,6 +115,7 @@ export function ForecastChart({
   accent?: string;
   histColor?: string;
 }) {
+  const { currency, rate } = useCurrency(); // <-- Hook added here
   const histTrim = history.slice(-240);
   const boundary = histTrim[histTrim.length - 1]?.date;
   const data = [
@@ -121,23 +138,16 @@ export function ForecastChart({
           <CartesianGrid stroke="rgba(126,152,206,0.07)" vertical={false} />
           <XAxis dataKey="date" tickFormatter={fmtShort} tickLine={false} axisLine={false} minTickGap={48} dy={6} />
           <YAxis
-                tickFormatter={(val) => {
-                  const inrVal = Math.round((val * 84) / 1000); // Renders in thousands (₹k) or Lakhs (₹L)
-                  return `₹${inrVal}k`;
-                }}
-                stroke="#5d6c8a"
-                fontSize={10}
-              /><Tooltip formatter={(value: any) => [
-                  `₹${Math.round(value * 84).toLocaleString("en-IN")}`,
-                  "TCE Rate",
-                ]}
-                contentStyle={{
-                  backgroundColor: "#0d1524",
-                  borderColor: "rgba(126, 152, 206, 0.24)",
-                  borderRadius: "8px",
-                  color: "#e8edf8",
-                }}
-              />
+            tickFormatter={(val) => {
+              if (currency === "INR") {
+                return `₹${Math.round((val * rate) / 1000)}k`;
+              }
+              return `$${Math.round(val / 1000)}k`;
+            }}
+            stroke="#8b9ab8"
+            fontSize={10}
+          />
+          <Tooltip content={<ForecastTip />} cursor={{ stroke: "rgba(126,152,206,0.35)", strokeDasharray: "3 4" }} />
           {showBands && (
             <>
               <Area type="monotone" dataKey="oLo" stackId="outer" stroke="none" fill="transparent" isAnimationActive={false} legendType="none" tooltipType="none" />

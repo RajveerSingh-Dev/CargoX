@@ -9,8 +9,9 @@
   --color-ink-600: #1a2740;
   --color-line: rgba(126, 152, 206, 0.13);
   --color-line-strong: rgba(126, 152, 206, 0.24);
-  --color-mist: #8b9ab8;
-  --color-fog: #5d6c8a;
+  /* Brightened for clear contrast against dark backgrounds */
+  --color-mist: #white; 
+  --color-fog: #edf2ff; 
   --color-paper: #e8edf8;
   --color-brand: #f2a63b;
   --color-brand-soft: #ffd08a;
@@ -38,8 +39,9 @@ html.light {
   --color-ink-600: #cbd5e1;
   --color-line: rgba(15, 23, 42, 0.08);
   --color-line-strong: rgba(15, 23, 42, 0.16);
-  --color-mist: #475569;
-  --color-fog: #64748b;
+  /* Deepened for clear contrast against light backgrounds */
+  --color-mist: #334155;
+  --color-fog: #383737;
   --color-paper: #0f172a;
 }
 
