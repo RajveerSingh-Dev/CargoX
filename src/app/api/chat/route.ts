@@ -1,0 +1,238 @@
+import { NextRequest, NextResponse } from "next/server";
+import { analyzeTiming, forecastSeries } from "@/lib/forecast";
+import { getActiveEvents, getClasses, getPorts, getRoutes, getSeries } from "@/lib/queries";
+import Groq from "groq-sdk";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+
+const MAX_MESSAGE_LENGTH = 2000;
+
+type ChatRequest = { message?: unknown };
+
+function pickHorizon(message: string): number {
+  const match = message.match(/\b(\d{1,3})\s*[\n]?\s*(?:day|days|d)\b/i);
+  const requested = match ? Number(match[1]) : /\b(90|ninety)\b/i.test(message) ? 90 : 30;
+  return Math.max(30, Math.min(365, requested));
+}
+
+function pickClass(message: string, classes: Awaited<ReturnType<typeof getClasses>>) {
+  const upper = message.toUpperCase();
+  const aliases: Record<string, string[]> = {
+    HANDY: ["HANDY", "HANDYSIZE"],
+    SUPRAMAX: ["SUPRAMAX", "SUPRA MAX", "SUPRA-MAX"],
+    PANAMAX: ["PANAMAX", "PANA MAX"],
+    CAPE: ["CAPE", "CAPESIZE", "CAPE SIZE"],
+  };
+  const found = classes.find((item) => (aliases[item.code] ?? [item.code, item.name.toUpperCase()]).some((alias) => upper.includes(alias)));
+  return found ?? classes.find((item) => item.code === "SUPRAMAX") ?? classes[0];
+}
+
+function pickRoute(
+  message: string,
+  routes: Awaited<ReturnType<typeof getRoutes>>,
+  classes: Awaited<ReturnType<typeof getClasses>>,
+) {
+  const normalized = message.toLocaleLowerCase();
+  const mentionedPort = (port: { name: string; code: string }) =>
+    normalized.includes(port.name.toLocaleLowerCase()) || new RegExp(`\\b${port.code.toLocaleLowerCase()}\\b`).test(normalized);
+
+  // Prefer a route whose origin/destination is explicitly named by the user.
+  const explicit = routes.find((route) => mentionedPort(route.origin) || mentionedPort(route.dest));
+  if (explicit) {
+    const matching = routes.filter((route) =>
+      (mentionedPort(route.origin) || mentionedPort(route.dest)) &&
+      route.origin.id !== route.dest.id,
+    );
+    // If only a destination is mentioned, prefer an import route to that port.
+    const destinationImport = matching.find((route) => mentionedPort(route.dest) && route.direction === "IMPORT");
+    return destinationImport ?? explicit;
+  }
+
+  const cls = pickClass(message, classes);
+  return routes.find((route) => cls && cls.draftM <= route.origin.maxDraftM && cls.draftM <= route.dest.maxDraftM) ?? routes[0];
+}
+
+function safeJson(value: unknown): string {
+  return JSON.stringify(value, (_key, item) => {
+    if (typeof item === "number" && !Number.isFinite(item)) return null;
+    return item;
+  });
+}
+
+export async function POST(req: NextRequest) {
+  let body: ChatRequest;
+  try {
+    body = (await req.json()) as ChatRequest;
+  } catch {
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
+
+  if (typeof body.message !== "string" || !body.message.trim()) {
+    return NextResponse.json({ error: "Please enter a question." }, { status: 400 });
+  }
+  const message = body.message.trim().slice(0, MAX_MESSAGE_LENGTH);
+  const apiKey = process.env.GROQ_API_KEY;
+  
+  if (!apiKey) {
+    return NextResponse.json({ error: "Groq is not configured. Add GROQ_API_KEY to your local environment and Vercel project settings." }, { status: 503 });
+  }
+
+  try {
+    const [classes, routes, ports, events] = await Promise.all([
+      getClasses(), getRoutes(), getPorts(), getActiveEvents(),
+    ]);
+
+    if (!classes.length || !routes.length) {
+      return NextResponse.json({ error: "CargoX database returned no vessel classes or routes. Check DATABASE_URL and database seed/migration status." }, { status: 503 });
+    }
+
+    const cls = pickClass(message, classes);
+    const route = pickRoute(message, routes, classes);
+    const horizon = pickHorizon(message);
+    const series = await getSeries(cls.id, route.id);
+
+    let forecastContext: Record<string, unknown>;
+    if (series.length >= 200) {
+      const forecast = forecastSeries(series, horizon);
+      const timing = analyzeTiming(forecast, horizon);
+      const forecastPoints = forecast.points.slice(0, horizon);
+      forecastContext = {
+        status: "available",
+        vesselClass: { code: cls.code, name: cls.name },
+        route: {
+          code: route.code,
+          origin: route.origin.name,
+          destination: route.dest.name,
+          commodity: route.commodity,
+          direction: route.direction,
+          distanceNm: route.distanceNm,
+        },
+        horizonDays: horizon,
+        historical: {
+          observations: series.length,
+          latestDate: series[series.length - 1]?.date,
+          latestRateUsdPerDay: series[series.length - 1]?.value,
+          earliestDate: series[0]?.date,
+        },
+        forecastStats: forecast.stats,
+        timingAdvice: timing,
+        forecastPoints,
+        forecastPointsIncluded: forecastPoints.length,
+        note: "Forecast is generated by CargoX's existing Holt-damped/seasonal forecasting engine from database history. It is a model estimate, not a guaranteed market quote.",
+      };
+    } else {
+      forecastContext = {
+        status: "insufficient_history",
+        vesselClass: { code: cls.code, name: cls.name },
+        route: { code: route.code, origin: route.origin.name, destination: route.dest.name, commodity: route.commodity },
+        observations: series.length,
+        requiredObservations: 200,
+        note: "Do not invent a forecast or rate. Explain that CargoX does not have enough history for this class/route pairing.",
+      };
+    }
+
+    const mentionedPortNames = ports
+      .filter((port) => message.toLowerCase().includes(port.name.toLowerCase()) || message.toLowerCase().includes(port.code.toLowerCase()))
+      .map((port) => ({
+        name: port.name, code: port.code, country: port.country,
+        maxDraftM: port.maxDraftM, maxLoaM: port.maxLoaM,
+        congestionDays: port.congestionDays, congestionTrend: port.congestionTrend,
+        loadRateTpd: port.loadRateTpd, dischargeRateTpd: port.dischargeRateTpd,
+        portFeeUsd: port.portFeeUsd, notes: port.notes,
+      }));
+
+    const relevantEvents = events
+      .filter((event) => !event.portId || mentionedPortNames.length === 0 || ports.some((port) =>
+        mentionedPortNames.some((mentioned) => mentioned.code === port.code) && port.id === event.portId,
+      ))
+      .slice(0, 8)
+      .map((event) => ({
+        type: event.type, severity: event.severity, title: event.title,
+        description: event.description, impact: event.impact,
+        startDate: event.startDate, endDate: event.endDate,
+      }));
+
+    const cargoXContext = {
+      sourcePolicy: "Only use the CargoX data included below. No web search or external live API calls were made for this answer.",
+      generatedAt: new Date().toISOString(),
+      forecast: forecastContext,
+      mentionedPorts: mentionedPortNames,
+      activeMarketEvents: relevantEvents,
+      availableVesselClasses: classes.map((item) => ({ code: item.code, name: item.name, typicalDwt: item.typicalDwt })),
+      availableRoutes: routes.map((item) => ({ code: item.code, origin: item.origin.name, destination: item.dest.name, commodity: item.commodity, direction: item.direction })),
+    };
+
+    const groqResponse = await fetch(
+      `https://api.groq.com/openai/v1/chat/completions`,
+      {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}` // Yeh line add karna zaruri tha taaki auth fail na ho
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [
+            {
+              role: "system",
+              content: [
+                "You are CargoX Copilot, a maritime freight decision-support assistant.",
+                "Answer in the same language as the user. Be concise but explain relevant figures.",
+                "Use only the supplied CargoX context. Do not browse or claim live information.",
+                "Never invent rates, dates, routes, port conditions, events, or model results.",
+                "Clearly distinguish historical observations from model forecasts.",
+                "If data is insufficient, say so and do not invent a prediction.",
+                "Forecasts are estimates, not guaranteed quotes or financial recommendations.",
+                "The chatbot is read-only. Do not claim website charts were changed.",
+                "The chatbot is read-only. Do not claim website charts were changed.",
+                "Use emojis sparingly and only when they improve clarity; keep the tone professional and maritime-focused.",
+                "Use relevant emojis for section headings when appropriate: 🚢 vessels and shipping, 📊 historical data and forecasts, 📍 ports and routes, ⚠️ risks and uncertainty, ✅ recommendations supported by the supplied data.",
+                "Structure analytical answers with short headings, concise explanations, and bullet points where useful.",
+                "When presenting multiple routes, vessels, events, or forecast values, use a valid Markdown table with clear column headers.",
+                "Use bold text for important figures and key conclusions, but avoid excessive formatting, repeated emojis, and decorative headings.",
+                "Keep simple factual answers short. For complex questions, explain the key finding first, then provide supporting data and limitations."
+              ].join(" ")
+            },
+            {
+              role: "user",
+              content: `CargoX data context:\n${safeJson(cargoXContext)}\n\nUser question:\n${message}`
+            }
+          ],
+          temperature: 0.2,
+          max_completion_tokens: 800
+        }),
+        cache: "no-store",
+      },
+    );
+
+    const payload = await groqResponse.json().catch(() => null);
+    if (!groqResponse.ok) {
+      console.error("Groq API request failed", groqResponse.status, payload?.error?.message ?? "Unknown error");
+      return NextResponse.json({ error: "Groq could not generate a response. Check the API key, model access, and quota." }, { status: 502 });
+    }
+
+    const answer = payload?.choices?.[0]?.message?.content?.trim();
+    if (!answer) {
+      return NextResponse.json({ error: "Groq returned an empty answer. Please try again." }, { status: 502 });
+    }
+
+    return NextResponse.json({
+      answer,
+      source: "cargox-database-and-existing-forecast",
+      contextSummary: {
+        route: route.code,
+        vesselClass: cls.code,
+        horizonDays: horizon,
+        historicalObservations: series.length,
+        latestHistoricalDate: series[series.length - 1]?.date ?? null,
+        forecastAvailable: series.length >= 200,
+        externalSearchUsed: false,
+      },
+    }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("CargoX chat route failed", error);
+    return NextResponse.json({ error: "CargoX could not retrieve its data. Check database connectivity and try again." }, { status: 500 });
+  }
+}
